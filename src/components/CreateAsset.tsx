@@ -50,7 +50,9 @@ export function CreateAsset({ onBack, assetToEdit }: { onBack: () => void, asset
       } else {
         createNewAsset({
           ...formData,
-          dateAcquired: formData.dateAcquired || new Date().toISOString()
+          dateAcquired: formData.dateAcquired || null,
+          dateAudited: formData.dateAudited || null,
+          acquisitionCost: formData.acquisitionCost || null
         });
         Toast.fire({
           icon: 'success',
