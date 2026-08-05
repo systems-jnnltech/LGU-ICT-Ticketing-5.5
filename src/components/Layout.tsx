@@ -24,8 +24,8 @@ export function Layout({ children, currentTab, setCurrentTab }: { children: Reac
     <div className="h-screen bg-bg text-ink flex">
       {/* COMPACT SIDEBAR */}
       <aside className="w-[80px] bg-bg border-r border-border flex flex-col items-center py-6">
-        <div className="w-10 h-10 bg-accent rounded-xl flex items-center justify-center font-black text-white mb-8">
-          M
+        <div className="w-12 h-12 flex items-center justify-center mb-8">
+          <img src="/LGU_LOGO1.png" alt="LGU Logo" className="w-full h-full object-contain" />
         </div>
         <nav className="flex flex-col gap-6">
           {navItems.map(item => (
