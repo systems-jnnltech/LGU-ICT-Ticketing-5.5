@@ -39,6 +39,16 @@ export interface Asset {
   dateAudited?: string;
   auditedBy?: string;
   remarks?: string;
+  history?: AssetHistory[];
+}
+
+export interface AssetHistory {
+  id: string;
+  assetId: string;
+  action: string;
+  changes: string;
+  performedBy: string;
+  createdAt: string;
 }
 
 export interface Comment {
