@@ -65,7 +65,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     try {
       const [ticketsRes, assetsRes, officesRes, usersRes] = await Promise.all([
         supabase.from('tickets').select('*, ticket_comments(*)').order('created_at', { ascending: false }),
-        supabase.from('assets').select('*').order('created_at', { ascending: false }),
+        supabase.from('assets').select('*, asset_history(*)').order('created_at', { ascending: false }),
         supabase.from('departments').select('*').order('name'),
         supabase.from('profiles').select('*')
       ]);
@@ -117,6 +117,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (assignedToId) updates.assigned_to = assignedToId;
       const { error } = await supabase.from('tickets').update(updates).eq('id', ticketId);
       if (error) throw error;
+      
+      if (status === 'RESOLVED' || status === 'CLOSED') {
+        const ticket = tickets.find(t => t.id === ticketId);
+        if (ticket && ticket.assetId && currentUser) {
+          await supabase.from('asset_history').insert({
+            asset_id: ticket.assetId,
+            action: `Ticket ${status === 'RESOLVED' ? 'Resolved' : 'Closed'}`,
+            changes: `Ticket #${ticket.ticketNumber} was ${status.toLowerCase()}. ${ticket.ictRecommendation ? `Recommendation: ${ticket.ictRecommendation}` : ''}`,
+            performed_by: currentUser.id
+          });
+        }
+      }
+      
       fetchData();
     } catch (error: any) {
       toast.error('Failed to update ticket: ' + error.message);
@@ -132,7 +145,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         content: text
       });
       if (error) throw error;
-      // Depending on UI, we might need to fetch comments for tickets
+      fetchData(); // Explicitly fetch to update UI immediately
     } catch (error: any) {
       toast.error('Failed to add comment: ' + error.message);
     }
@@ -163,8 +176,29 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const updateExistingAsset = async (id: string, updates: any) => {
     if (!isSupabaseConfigured) return;
     try {
+      const oldAsset = assets.find(a => a.id === id);
       const { error } = await supabase.from('assets').update(mapAssetToDB(updates)).eq('id', id);
       if (error) throw error;
+      
+      // Calculate changes
+      if (oldAsset && currentUser) {
+        let changesStr = '';
+        for (const key of Object.keys(updates)) {
+          if (oldAsset[key as keyof typeof oldAsset] !== updates[key] && key !== 'history') {
+            changesStr += `${key} changed from "${oldAsset[key as keyof typeof oldAsset] || 'None'}" to "${updates[key]}". `;
+          }
+        }
+        
+        if (changesStr) {
+          await supabase.from('asset_history').insert({
+            asset_id: id,
+            action: 'Equipment Updated',
+            changes: changesStr,
+            performed_by: currentUser.id
+          });
+        }
+      }
+      
       fetchData();
     } catch (error: any) {
       toast.error('Failed to update asset: ' + error.message);
