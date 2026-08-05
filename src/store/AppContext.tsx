@@ -64,7 +64,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     
     try {
       const [ticketsRes, assetsRes, officesRes, usersRes] = await Promise.all([
-        supabase.from('tickets').select('*').order('created_at', { ascending: false }),
+        supabase.from('tickets').select('*, ticket_comments(*)').order('created_at', { ascending: false }),
         supabase.from('assets').select('*').order('created_at', { ascending: false }),
         supabase.from('departments').select('*').order('name'),
         supabase.from('profiles').select('*')
@@ -86,10 +86,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (isSupabaseConfigured) {
       const ticketsSub = supabase.channel('tickets-changes').on('postgres_changes', { event: '*', schema: 'public', table: 'tickets' }, fetchData).subscribe();
       const assetsSub = supabase.channel('assets-changes').on('postgres_changes', { event: '*', schema: 'public', table: 'assets' }, fetchData).subscribe();
+      const commentsSub = supabase.channel('comments-changes').on('postgres_changes', { event: '*', schema: 'public', table: 'ticket_comments' }, fetchData).subscribe();
       
       return () => {
         ticketsSub.unsubscribe();
         assetsSub.unsubscribe();
+        commentsSub.unsubscribe();
       };
     }
   }, []);
