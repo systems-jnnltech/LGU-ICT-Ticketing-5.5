@@ -6,8 +6,9 @@ import { Role } from '../store/AuthContext';
 import { supabase } from '../lib/supabase';
 
 export function AdminUsers() {
-  const { offices } = useAppContext();
+  const { offices, users, updateUserRole } = useAppContext();
   const [isInviting, setIsInviting] = useState(false);
+  const [editingUser, setEditingUser] = useState<any | null>(null);
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -194,7 +195,7 @@ export function AdminUsers() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {useAppContext().users.map(user => {
+              {users.map(user => {
                 const initials = user.name ? user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'U';
                 const officeName = offices.find(o => o.id === user.officeId)?.name || 'N/A';
                 
@@ -227,7 +228,13 @@ export function AdminUsers() {
                     </td>
                     <td className="px-6 py-4 text-right">
                       {/* Can implement edit user role modal here in future */}
-                      <button className="text-ink-muted hover:text-accent transition-colors p-1 opacity-0 group-hover:opacity-100">
+                      <button 
+                        onClick={() => {
+                          const rawRole = user.role === 'Admin' ? 'system_admin' : (user.role === 'ICT Support' ? 'ict_support' : 'employee');
+                          setEditingUser({ ...user, rawRole, departmentId: user.officeId });
+                        }}
+                        className="text-ink-muted hover:text-accent transition-colors p-1 opacity-0 group-hover:opacity-100"
+                      >
                         <Edit2 className="w-4 h-4" />
                       </button>
                     </td>
