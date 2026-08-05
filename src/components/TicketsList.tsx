@@ -6,6 +6,7 @@ import { format } from 'date-fns';
 export function TicketsList({ onSelectTicket, onCreateTicket }: { onSelectTicket: (id: string) => void, onCreateTicket: () => void }) {
   const { tickets, currentUser, users, categories } = useAppContext();
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
+  const [ictView, setIctView] = useState<'MY_TASKS' | 'ALL_TICKETS'>('MY_TASKS');
 
   let filteredTickets = tickets;
 
@@ -13,7 +14,10 @@ export function TicketsList({ onSelectTicket, onCreateTicket }: { onSelectTicket
   if (currentUser?.role === 'Department User') {
     filteredTickets = filteredTickets.filter(t => t.officeId === currentUser.officeId);
   } else if (currentUser?.role === 'ICT Support') {
-    filteredTickets = filteredTickets.filter(t => t.assignedToId === currentUser.id);
+    if (ictView === 'MY_TASKS') {
+      filteredTickets = filteredTickets.filter(t => t.assignedToId === currentUser.id);
+    }
+    // If ALL_TICKETS, we don't filter by assignee, showing the full Ticket History
   }
 
   // Status filtering
@@ -47,10 +51,27 @@ export function TicketsList({ onSelectTicket, onCreateTicket }: { onSelectTicket
     <div className="space-y-6">
       <div className="bg-surface rounded-xl shadow-sm border border-border overflow-hidden">
         <div className="p-4 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-           <h2 className="font-bold text-sm text-ink flex items-center gap-2">
-             <div className="w-2 h-2 bg-accent rounded-full"></div>
-             Support Tickets
-           </h2>
+           {currentUser?.role === 'ICT Support' ? (
+             <div className="flex bg-bg rounded-lg p-1 border border-border">
+               <button 
+                 onClick={() => setIctView('MY_TASKS')}
+                 className={`px-4 py-1.5 rounded-md text-xs font-bold transition-colors ${ictView === 'MY_TASKS' ? 'bg-surface text-ink shadow-sm' : 'text-ink-muted hover:text-ink'}`}
+               >
+                 My Tasks
+               </button>
+               <button 
+                 onClick={() => setIctView('ALL_TICKETS')}
+                 className={`px-4 py-1.5 rounded-md text-xs font-bold transition-colors ${ictView === 'ALL_TICKETS' ? 'bg-surface text-ink shadow-sm' : 'text-ink-muted hover:text-ink'}`}
+               >
+                 Ticket History
+               </button>
+             </div>
+           ) : (
+             <h2 className="font-bold text-sm text-ink flex items-center gap-2">
+               <div className="w-2 h-2 bg-accent rounded-full"></div>
+               Support Tickets
+             </h2>
+           )}
            <div className="flex items-center gap-3">
              <div className="flex items-center space-x-2 bg-bg px-3 py-1.5 rounded-lg border border-border">
                <Filter className="w-3.5 h-3.5 text-ink-muted" />
