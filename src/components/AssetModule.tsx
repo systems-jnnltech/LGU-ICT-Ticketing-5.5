@@ -266,30 +266,52 @@ export function AssetDetail({ assetId, onBack, onEdit }: { assetId: string, onBa
             </div>
           </div>
 
-          {/* Ticket History */}
+          {/* Equipment History */}
           <div className="bg-surface rounded-xl shadow-sm border border-border overflow-hidden">
-            <div className="px-5 py-3 border-b border-border bg-bg">
-              <h3 className="text-xs font-bold text-ink uppercase tracking-wider">Equipment Repair History</h3>
+            <div className="px-5 py-3 border-b border-border bg-bg flex justify-between items-center">
+              <h3 className="text-xs font-bold text-ink uppercase tracking-wider">Equipment History</h3>
+              <span className="text-[10px] text-ink-muted bg-white/5 px-2 py-0.5 rounded font-mono">
+                Total records {(asset.history?.length || 0) + relatedTickets.length}
+              </span>
+            </div>
+            <div className="px-5 py-4 bg-bg/50 border-b border-border">
+              <p className="text-xs text-ink-muted">Recorded actions, changes, and repairs for this equipment.</p>
             </div>
             <div className="divide-y divide-white/5">
-              {relatedTickets.length === 0 ? (
-                <div className="p-6 text-center text-ink-muted text-xs">No repair history found.</div>
+              {(!asset.history || asset.history.length === 0) && relatedTickets.length === 0 ? (
+                <div className="p-6 text-center text-ink-muted text-xs">No history found.</div>
               ) : (
-                relatedTickets.map(ticket => (
-                  <div key={ticket.id} className="p-5">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center space-x-2">
-                        <span className="font-bold text-xs text-accent">{ticket.ticketNumber}</span>
-                        <span className="text-[10px] text-ink-muted">• {format(new Date(ticket.createdAt), 'MMM d, yyyy')}</span>
+                <>
+                  {/* Edits from Asset History */}
+                  {asset.history?.map(record => (
+                    <div key={record.id} className="p-5 hover:bg-white/5 transition-colors">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="font-bold text-sm text-ink">{record.action}</div>
+                        <span className="text-[10px] text-ink-muted">{format(new Date(record.createdAt), 'MMM d, yyyy h:mm a')}</span>
                       </div>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-white/5 text-ink-muted">
-                        {ticket.status}
-                      </span>
+                      <p className="text-xs text-ink-muted leading-relaxed">{record.changes}</p>
                     </div>
-                    <div className="font-bold text-sm text-ink mb-1">{ticket.subject}</div>
-                    <p className="text-xs text-ink-muted">{ticket.description}</p>
-                  </div>
-                ))
+                  ))}
+                  
+                  {/* Related Tickets as Repair History */}
+                  {relatedTickets.map(ticket => (
+                    <div key={ticket.id} className="p-5 hover:bg-white/5 transition-colors">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center space-x-2">
+                          <span className="font-bold text-sm text-accent">Ticket #{ticket.ticketNumber}</span>
+                        </div>
+                        <div className="flex items-center space-x-3">
+                          <span className="text-[10px] text-ink-muted">{format(new Date(ticket.createdAt), 'MMM d, yyyy h:mm a')}</span>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-white/5 text-ink-muted">
+                            {ticket.status}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="font-bold text-xs text-ink mb-1">{ticket.subject}</div>
+                      <p className="text-xs text-ink-muted leading-relaxed">{ticket.description}</p>
+                    </div>
+                  ))}
+                </>
               )}
             </div>
           </div>
