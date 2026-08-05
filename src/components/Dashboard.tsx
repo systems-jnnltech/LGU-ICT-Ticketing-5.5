@@ -5,16 +5,24 @@ import { Ticket } from '../store/mockData';
 export function Dashboard() {
   const { tickets, assets, users, currentUser } = useAppContext();
 
+  let displayedTickets = tickets;
+  let displayedAssets = assets;
+
+  if (currentUser?.role === 'Department User') {
+    displayedTickets = tickets.filter(t => t.officeId === currentUser.officeId);
+    displayedAssets = assets.filter(a => a.officeId === currentUser.officeId);
+  }
+
   // Metrics
-  const newTickets = tickets.filter(t => t.status === 'NEW').length;
-  const assigned = tickets.filter(t => t.status === 'ASSIGNED').length;
-  const inProgress = tickets.filter(t => t.status === 'IN PROGRESS').length;
-  const pending = tickets.filter(t => t.status === 'PENDING').length;
-  const resolved = tickets.filter(t => t.status === 'RESOLVED').length;
+  const newTickets = displayedTickets.filter(t => t.status === 'NEW').length;
+  const assigned = displayedTickets.filter(t => t.status === 'ASSIGNED').length;
+  const inProgress = displayedTickets.filter(t => t.status === 'IN PROGRESS').length;
+  const pending = displayedTickets.filter(t => t.status === 'PENDING').length;
+  const resolved = displayedTickets.filter(t => t.status === 'RESOLVED').length;
   
-  const totalAssets = assets.length;
-  const operational = assets.filter(a => a.operationalStatus === 'Operational').length;
-  const forRepair = assets.filter(a => a.operationalStatus === 'Non-Operational' || a.operationalStatus === 'Under Maintenance').length;
+  const totalAssets = displayedAssets.length;
+  const operational = displayedAssets.filter(a => a.operationalStatus === 'Operational').length;
+  const forRepair = displayedAssets.filter(a => a.operationalStatus === 'Non-Operational' || a.operationalStatus === 'Under Maintenance').length;
 
   // Workload (Active tickets: Assigned + In Progress + Pending)
   const ictStaff = users.filter(u => u.role === 'ICT Support');
@@ -65,7 +73,7 @@ export function Dashboard() {
                 </tr>
               </thead>
               <tbody className="text-xs">
-                {tickets.filter(t => t.status === 'NEW').slice(0, 5).map(ticket => (
+                {displayedTickets.filter(t => t.status === 'NEW').slice(0, 5).map(ticket => (
                   <tr key={ticket.id} className="border-b border-white/5 hover:bg-surface/5 transition-colors">
                     <td className="px-4 py-3 font-bold font-mono text-accent">{ticket.ticketNumber}</td>
                     <td className="px-4 py-3 text-ink truncate max-w-xs">{ticket.subject}</td>
@@ -80,7 +88,7 @@ export function Dashboard() {
                     </td>
                   </tr>
                 ))}
-                {tickets.filter(t => t.status === 'NEW').length === 0 && (
+                {displayedTickets.filter(t => t.status === 'NEW').length === 0 && (
                   <tr>
                     <td colSpan={3} className="px-4 py-8 text-center text-ink-muted">No new tickets.</td>
                   </tr>
