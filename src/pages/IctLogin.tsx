@@ -45,8 +45,8 @@ export function IctLogin() {
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <div className="flex justify-center">
-          <div className="w-16 h-16 bg-accent rounded-2xl flex items-center justify-center shadow-lg shadow-accent/20">
-            <ShieldCheck className="w-8 h-8 text-white" />
+          <div className="w-24 h-24 flex items-center justify-center">
+            <img src="/LGU_LOGO1.png" alt="LGU Logo" className="w-full h-full object-contain drop-shadow-md" />
           </div>
         </div>
         <h2 className="mt-6 text-center text-3xl font-black tracking-tight text-ink">
