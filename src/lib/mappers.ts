@@ -25,7 +25,7 @@ export const mapAssetFromDB = (dbAsset: any) => ({
 });
 
 export const mapAssetToDB = (asset: any) => ({
-  department_id: asset.officeId,
+  department_id: asset.officeId || null,
   equipment_type: asset.equipmentType,
   property_number: asset.propertyNumber,
   inventory_number: asset.inventoryNumber,
@@ -42,9 +42,9 @@ export const mapAssetToDB = (asset: any) => ({
   microsoft_office: asset.microsoftOffice,
   condition: asset.condition,
   operational_status: asset.operationalStatus,
-  acquisition_cost: asset.acquisitionCost,
-  date_acquired: asset.dateAcquired,
-  date_audited: asset.dateAudited,
+  acquisition_cost: asset.acquisitionCost || null,
+  date_acquired: asset.dateAcquired || null,
+  date_audited: asset.dateAudited || null,
   audited_by: asset.auditedBy,
   remarks: asset.remarks,
 });
