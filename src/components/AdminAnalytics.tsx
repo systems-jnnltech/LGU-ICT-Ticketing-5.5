@@ -24,7 +24,7 @@ export function AdminAnalytics() {
 
   // Category breakdown
   const categoryCounts = tickets.reduce((acc, t) => {
-    const catName = categories.find(c => c.id === t.categoryId)?.name || 'Unknown';
+    const catName = categories.find(c => c.id === t.categoryId)?.name || t.categoryId || 'Unknown';
     acc[catName] = (acc[catName] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
