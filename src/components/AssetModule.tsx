@@ -127,8 +127,8 @@ export function AssetDetail({ assetId, onBack, onEdit }: { assetId: string, onBa
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="md:col-span-2 space-y-6">
+      <div className="space-y-6">
+        <div className="space-y-6">
           {/* Details */}
           <div className="bg-surface rounded-xl shadow-sm border border-border overflow-hidden">
             <div className="px-5 py-3 border-b border-border bg-bg">
@@ -293,18 +293,6 @@ export function AssetDetail({ assetId, onBack, onEdit }: { assetId: string, onBa
               )}
             </div>
           </div>
-        </div>
-
-        <div className="space-y-6">
-           {/* Actions / Side Panel */}
-           <div className="bg-bg p-5 rounded-xl border border-border shadow-sm">
-             <h3 className="text-xs font-bold text-ink uppercase tracking-wider mb-4">Quick Actions</h3>
-             <div className="space-y-2">
-               <button className="w-full text-left px-4 py-2 bg-surface border border-border rounded-lg text-xs font-bold text-ink-muted hover:bg-bg transition-colors shadow-sm">Transfer Asset</button>
-               <button className="w-full text-left px-4 py-2 bg-surface border border-border rounded-lg text-xs font-bold text-ink-muted hover:bg-bg transition-colors shadow-sm">Perform Audit</button>
-               <button className="w-full text-left px-4 py-2 bg-accent border border-accent rounded-lg text-xs font-bold text-white hover:brightness-110 transition-colors shadow-sm">Create Ticket</button>
-             </div>
-           </div>
         </div>
       </div>
     </div>
