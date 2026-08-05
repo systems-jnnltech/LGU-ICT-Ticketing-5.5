@@ -58,12 +58,17 @@ export const mapTicketFromDB = (dbTicket: any) => ({
   priority: dbTicket.priority,
   subject: dbTicket.title,
   description: dbTicket.description,
-  status: dbTicket.status,
+  status: dbTicket.status.toUpperCase(),
   assignedToId: dbTicket.assigned_to,
   createdAt: dbTicket.created_at,
   updatedAt: dbTicket.updated_at,
-  recommendation: dbTicket.recommendation,
-  comments: [] // We'll fetch comments separately if needed or join them
+  ictRecommendation: dbTicket.recommendation,
+  comments: dbTicket.ticket_comments ? dbTicket.ticket_comments.map((c: any) => ({
+    id: c.id,
+    userId: c.author_id,
+    text: c.content,
+    createdAt: c.created_at
+  })).sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()) : [] 
 });
 
 export const mapTicketToDB = (ticket: any) => ({
@@ -75,7 +80,7 @@ export const mapTicketToDB = (ticket: any) => ({
   reported_by: ticket.requesterId,
   assigned_to: ticket.assignedToId,
   department_id: ticket.officeId,
-  recommendation: ticket.recommendation
+  recommendation: ticket.ictRecommendation
 });
 
 export const mapUserFromDB = (dbProfile: any) => ({
