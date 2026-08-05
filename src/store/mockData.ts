@@ -11,6 +11,8 @@ export interface User {
 export interface Office {
   id: string;
   name: string;
+  acronym?: string;
+  email?: string;
 }
 
 export interface Asset {
@@ -67,9 +69,42 @@ export interface Ticket {
 }
 
 export let mockOffices: Office[] = [
-  { id: 'off_1', name: 'Municipal Accounting Office' },
-  { id: 'off_2', name: "Mayor's Office" },
-  { id: 'off_3', name: 'Human Resources' },
+  { id: 'off_1', name: "Mayor's Office Administrative Section", acronym: 'MO-Admin', email: 'mo_admin@malungon.gov.ph' },
+  { id: 'off_2', name: 'Bureau of Fire Protection', acronym: 'BFP', email: 'fire@malungon.gov.ph' },
+  { id: 'off_3', name: 'Bids and Awards Committee', acronym: 'BAC', email: 'bac@malungon.gov.ph' },
+  { id: 'off_4', name: 'Bureau of Internal Revenue', acronym: 'BIR', email: 'bir@malungon.gov.ph' },
+  { id: 'off_5', name: 'Civil Security Unit', acronym: 'CSU', email: 'csu@malungon.gov.ph' },
+  { id: 'off_6', name: 'General Services Office', acronym: 'GSO', email: 'gso@malungon.gov.ph' },
+  { id: 'off_7', name: 'Local Disaster Risk Reduction and Management Office', acronym: 'LDRRMO', email: 'ldrrmo@malungon.gov.ph' },
+  { id: 'off_8', name: 'Liga ng mga Barangay', acronym: 'LB', email: 'liga@malungon.gov.ph' },
+  { id: 'off_9', name: 'Local Youth Development Office', acronym: 'LYDO', email: 'lydo@malungon.gov.ph' },
+  { id: 'off_10', name: 'Municipal Economic Enterprise Development Office', acronym: 'MEEDO', email: 'market@malungon.gov.ph' },
+  { id: 'off_11', name: 'Municipal Environment and Natural Resources Office', acronym: 'MENRO', email: 'menro@malungon.gov.ph' },
+  { id: 'off_12', name: 'Municipal Local Government Operations Office', acronym: 'MLGOO', email: 'mlgoo@malungon.gov.ph' },
+  { id: 'off_13', name: 'Municipal Social Welfare and Development Office', acronym: 'MSWDO', email: 'mswdo@malungon.gov.ph' },
+  { id: 'off_14', name: 'Municipal Accounting Office', acronym: 'ACCOUNTING', email: 'accounting@malungon.gov.ph' },
+  { id: 'off_15', name: 'Office of the Municipal Agriculturist', acronym: 'OMAG', email: 'agri@malungon.gov.ph' },
+  { id: 'off_16', name: "Municipal Assessor's Office", acronym: 'MASSO', email: 'assessor@malungon.gov.ph' },
+  { id: 'off_17', name: 'Municipal Budget Office', acronym: 'MBO', email: 'budget@malungon.gov.ph' },
+  { id: 'off_18', name: 'Municipal Civil Registrar Office', acronym: 'MCR', email: 'registrar@malungon.gov.ph' },
+  { id: 'off_19', name: 'Municipal Cooperative Development Office', acronym: 'MCDO', email: 'coop@malungon.gov.ph' },
+  { id: 'off_20', name: 'Municipal Engineering Office', acronym: 'MEO', email: 'engineer@malungon.gov.ph' },
+  { id: 'off_21', name: 'Municipal Health Office', acronym: 'MHO', email: 'health@malungon.gov.ph' },
+  { id: 'off_22', name: 'Municipal Information Office', acronym: 'MIO', email: 'info@malungon.gov.ph' },
+  { id: 'off_23', name: "Municipal Treasurer's Office", acronym: 'MTO', email: 'treasurer@malungon.gov.ph' },
+  { id: 'off_24', name: 'Municipal Tribal Council', acronym: 'MTC', email: 'tribal@malungon.gov.ph' },
+  { id: 'off_25', name: 'Municipal Nutrition Office', acronym: 'MNO', email: 'nutrition@malungon.gov.ph' },
+  { id: 'off_26', name: 'Office of the Mayor', acronym: 'OM', email: 'mayor@malungon.gov.ph' },
+  { id: 'off_27', name: 'Office of the Vice Mayor', acronym: 'OVM', email: 'vicemayor@malungon.gov.ph' },
+  { id: 'off_28', name: 'Business Permits and Licensing Office', acronym: 'BPLO', email: 'permits@malungon.gov.ph' },
+  { id: 'off_29', name: 'Human Resource Management Office', acronym: 'HRMO', email: 'hr@malungon.gov.ph' },
+  { id: 'off_30', name: 'Public Employment Service Office', acronym: 'PESO', email: 'peso@malungon.gov.ph' },
+  { id: 'off_31', name: 'Municipal Planning and Development Office', acronym: 'MPDO', email: 'planning@malungon.gov.ph' },
+  { id: 'off_32', name: 'Philippine National Police', acronym: 'PNP', email: 'pnp@malungon.gov.ph' },
+  { id: 'off_33', name: 'Sangguniang Bayan', acronym: 'SB', email: 'sb@malungon.gov.ph' },
+  { id: 'off_34', name: 'Municipal Tourism Office', acronym: 'MTO', email: 'tourism@malungon.gov.ph' },
+  { id: 'off_35', name: 'Systems Administrator', acronym: 'SYSTEMS', email: 'systems@malungon.gov.ph' },
+  { id: 'off_36', name: 'Web Administrator', acronym: 'WEBADMIN', email: 'webadmin@malungon.gov.ph' }
 ];
 
 export function addOffice(name: string) {
