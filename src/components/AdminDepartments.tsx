@@ -5,12 +5,25 @@ import { Toast, ConfirmModal } from "../lib/toast";
 
 export function AdminDepartments() {
   const { offices, createNewOffice, updateExistingOffice } = useAppContext();
+  const [searchQuery, setSearchQuery] = useState("");
 
   const [isAdding, setIsAdding] = useState(false);
   const [newOfficeName, setNewOfficeName] = useState("");
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
+
+  let displayedOffices = offices;
+  if (searchQuery.trim()) {
+    const lowerQuery = searchQuery.toLowerCase();
+    displayedOffices = displayedOffices.filter(
+      (o) =>
+        o.name.toLowerCase().includes(lowerQuery) ||
+        o.acronym?.toLowerCase().includes(lowerQuery) ||
+        o.email?.toLowerCase().includes(lowerQuery) ||
+        o.id.toLowerCase().includes(lowerQuery)
+    );
+  }
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,6 +97,15 @@ export function AdminDepartments() {
             <div className="w-2 h-2 bg-accent rounded-full"></div>
             LGU Departments
           </div>
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search departments..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="bg-bg border border-border rounded-md text-ink px-4 py-2 text-[0.75rem] w-[280px] outline-none"
+            />
+          </div>
         </div>
 
         {isAdding && (
@@ -125,7 +147,7 @@ export function AdminDepartments() {
             </tr>
           </thead>
           <tbody>
-            {offices.map((office) => (
+            {displayedOffices.map((office) => (
               <tr
                 key={office.id}
                 className="hover:bg-white/5 transition-colors group"
