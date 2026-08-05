@@ -7,7 +7,7 @@ export function AssetList({ onSelectAsset, onCreateAsset }: { onSelectAsset: (id
   const { assets, offices, currentUser } = useAppContext();
   
   const displayedAssets = currentUser?.role === 'Department User' 
-    ? assets.filter(a => a.assignedTo === currentUser.name)
+    ? assets.filter(a => a.officeId === currentUser.officeId)
     : assets;
 
   return (
