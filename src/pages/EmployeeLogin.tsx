@@ -20,8 +20,8 @@ export function EmployeeLogin() {
     <div className="min-h-screen bg-bg flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
-          <div className="w-16 h-16 bg-accent/10 rounded-2xl flex items-center justify-center">
-            <ShieldCheck className="w-8 h-8 text-accent" />
+          <div className="w-24 h-24 flex items-center justify-center">
+            <img src="/LGU_LOGO1.png" alt="LGU Logo" className="w-full h-full object-contain drop-shadow-md" />
           </div>
         </div>
         <h2 className="mt-6 text-center text-3xl font-black tracking-tight text-ink">
