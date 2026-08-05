@@ -15,6 +15,7 @@ interface AppContextType {
   addComment: (ticketId: string, text: string) => void;
   updateRecommendation: (ticketId: string, recommendation: string) => void;
   users: User[];
+  updateUserRole: (userId: string, role: string, departmentId: string | null) => Promise<void>;
   assets: Asset[];
   createNewAsset: (asset: any) => void;
   updateExistingAsset: (id: string, updates: any) => void;
@@ -168,6 +169,34 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   };
   
+  const updateUserRole = async (userId: string, role: string, departmentId: string | null) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ role, department_id: departmentId })
+        .eq('id', userId);
+        
+      if (error) throw error;
+      
+      // Update local state
+      setUsers(users.map(u => {
+        if (u.id === userId) {
+          return {
+            ...u,
+            role: role === 'system_admin' ? 'Admin' : (role === 'ict_support' ? 'ICT Support' : 'Department User'),
+            officeId: departmentId || undefined
+          };
+        }
+        return u;
+      }));
+      
+      toast.success('User updated successfully');
+    } catch (err: any) {
+      console.error('Error updating user:', err);
+      toast.error(err.message || 'Failed to update user');
+    }
+  };
+
   const createNewOffice = async (name: string) => {
     if (!isSupabaseConfigured) return;
     try {
@@ -193,7 +222,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   return (
     <AppContext.Provider value={{
       currentUser, login, logout, tickets, createNewTicket, changeTicketStatus, addComment, updateRecommendation,
-      users, assets, createNewAsset, updateExistingAsset, offices, createNewOffice, updateExistingOffice, categories: mockCategories, authError,
+      users, updateUserRole, assets, createNewAsset, updateExistingAsset, offices, createNewOffice, updateExistingOffice, categories: mockCategories, authError,
       theme, toggleTheme
     }}>
       {children}
