@@ -54,7 +54,7 @@ export function IctLogin() {
           </div>
 
           <h2 className="text-4xl font-black mb-6 leading-tight">
-            Municipal Asset & Maintenance Management System
+            Municipal Asset Management System
           </h2>
           <p className="text-lg text-surface-muted mb-12 leading-relaxed">
             A centralized platform for managing government assets, tracking repair and maintenance requests, and monitoring equipment across all LGU departments.
