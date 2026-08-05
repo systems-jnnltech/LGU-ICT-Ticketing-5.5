@@ -11,11 +11,26 @@ export function AssetList({
   onCreateAsset: () => void;
 }) {
   const { assets, offices, currentUser } = useAppContext();
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const displayedAssets =
+  let displayedAssets =
     currentUser?.role === "Department User"
       ? assets.filter((a) => a.officeId === currentUser.officeId)
       : assets;
+
+  if (searchQuery.trim()) {
+    const lowerQuery = searchQuery.toLowerCase();
+    displayedAssets = displayedAssets.filter(
+      (a) =>
+        a.id.toLowerCase().includes(lowerQuery) ||
+        a.equipmentType.toLowerCase().includes(lowerQuery) ||
+        a.brand?.toLowerCase().includes(lowerQuery) ||
+        a.model?.toLowerCase().includes(lowerQuery) ||
+        a.propertyNumber?.toLowerCase().includes(lowerQuery) ||
+        offices.find((o) => o.id === a.officeId)?.name.toLowerCase().includes(lowerQuery) ||
+        offices.find((o) => o.id === a.officeId)?.acronym?.toLowerCase().includes(lowerQuery)
+    );
+  }
 
   return (
     <div>
@@ -59,6 +74,8 @@ export function AssetList({
             <input
               type="text"
               placeholder="Filter by ID, Name or Office..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="bg-bg border border-border rounded-md text-ink px-4 py-2 text-[0.75rem] w-[280px] outline-none"
             />
           </div>
