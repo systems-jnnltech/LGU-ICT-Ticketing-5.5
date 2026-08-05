@@ -22,6 +22,14 @@ export const mapAssetFromDB = (dbAsset: any) => ({
   dateAudited: dbAsset.date_audited,
   auditedBy: dbAsset.audited_by,
   remarks: dbAsset.remarks,
+  history: dbAsset.asset_history ? dbAsset.asset_history.map((h: any) => ({
+    id: h.id,
+    assetId: h.asset_id,
+    action: h.action,
+    changes: h.changes,
+    performedBy: h.performed_by,
+    createdAt: h.created_at
+  })).sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) : []
 });
 
 export const mapAssetToDB = (asset: any) => ({
