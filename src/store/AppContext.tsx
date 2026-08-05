@@ -104,6 +104,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     try {
       const { error } = await supabase.from('tickets').insert(mapTicketToDB(ticket));
       if (error) throw error;
+      
+      if (ticket.assetId && currentUser) {
+        await supabase.from('asset_history').insert({
+          asset_id: ticket.assetId,
+          action: 'Ticket Created',
+          changes: `A new ticket was created for this asset: ${ticket.subject}`,
+          performed_by: currentUser.id
+        });
+      }
+
       fetchData();
     } catch (error: any) {
       toast.error('Failed to create ticket: ' + error.message);
