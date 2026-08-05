@@ -31,6 +31,14 @@ export function AdminAnalytics() {
   
   const categoryData = Object.entries(categoryCounts).map(([name, count]) => ({ name, count }));
 
+  // Priority breakdown
+  const priorityCounts = tickets.reduce((acc, t) => {
+    acc[t.priority] = (acc[t.priority] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+  
+  const priorityData = Object.entries(priorityCounts).map(([name, count]) => ({ name, count }));
+
   const customTooltipStyle = {
     backgroundColor: '#18181b',
     border: '1px solid #27272a',
@@ -49,7 +57,7 @@ export function AdminAnalytics() {
         </div>
       </section>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         
         <div className="bg-surface border border-border p-6 rounded-2xl shadow-sm">
           <div className="text-[0.9rem] font-semibold flex items-center gap-2 mb-6 text-ink">
@@ -96,6 +104,22 @@ export function AdminAnalytics() {
           </div>
         </div>
 
+        <div className="bg-surface border border-border p-6 rounded-2xl shadow-sm md:col-span-2 lg:col-span-1">
+          <div className="text-[0.9rem] font-semibold flex items-center gap-2 mb-6 text-ink">
+            <div className="w-2 h-2 bg-orange-400 rounded-full"></div>
+            Tickets by Priority
+          </div>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={priorityData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+                <XAxis dataKey="name" stroke="#a1a1aa" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis stroke="#a1a1aa" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
+                <Tooltip cursor={{ fill: 'rgba(255,255,255,0.05)' }} contentStyle={customTooltipStyle} />
+                <Bar dataKey="count" fill="#f97316" radius={[4, 4, 0, 0]} barSize={40} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
       </div>
     </div>
   );
