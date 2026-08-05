@@ -88,5 +88,7 @@ export const mapUserFromDB = (dbProfile: any) => ({
 
 export const mapOfficeFromDB = (dbDepartment: any) => ({
   id: dbDepartment.id,
-  name: dbDepartment.name
+  name: dbDepartment.name,
+  acronym: dbDepartment.acronym,
+  email: dbDepartment.email
 });
