@@ -8,10 +8,16 @@ export function TicketDetail({ ticketId, onBack }: { ticketId: string, onBack: (
   const { tickets, users, assets, categories, currentUser, changeTicketStatus, addComment } = useAppContext();
   const ticket = tickets.find(t => t.id === ticketId);
   
-  const [selectedAssignee, setSelectedAssignee] = useState('');
+  const [selectedAssignee, setSelectedAssignee] = useState(ticket.assignedToId || '');
   const [newCommentText, setNewCommentText] = useState('');
   const [recommendationText, setRecommendationText] = useState(ticket.ictRecommendation || '');
   const [isEditingRecommendation, setIsEditingRecommendation] = useState(false);
+  
+  React.useEffect(() => {
+    if (ticket && ticket.assignedToId) {
+      setSelectedAssignee(ticket.assignedToId);
+    }
+  }, [ticket?.assignedToId]);
   
   const { updateRecommendation } = useAppContext();
 
@@ -305,10 +311,10 @@ export function TicketDetail({ ticketId, onBack }: { ticketId: string, onBack: (
                 </select>
                 <button 
                   onClick={handleAssign}
-                  disabled={!selectedAssignee}
-                  className="px-6 py-2 bg-accent text-white text-xs font-bold rounded-lg shadow-lg shadow-accent/20 hover:bg-accent/90 disabled:opacity-50 transition-colors"
+                  disabled={!selectedAssignee || selectedAssignee === ticket.assignedToId}
+                  className="px-6 py-2 bg-accent text-white text-xs font-bold rounded-lg shadow-lg shadow-accent/20 hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  Assign
+                  {selectedAssignee && selectedAssignee === ticket.assignedToId ? 'Assigned' : 'Assign'}
                 </button>
               </div>
             </div>
