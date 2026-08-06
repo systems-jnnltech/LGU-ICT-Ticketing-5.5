@@ -524,10 +524,10 @@ export function AssetDetail({
                           <p className="text-xs text-ink-muted">{ticket.ictRecommendation}</p>
                         </div>
                       )}
-                      {ticket.comments && ticket.comments.length > 0 && (
+                      {ticket.comments && ticket.comments.filter(c => !c.text.startsWith('System: Status changed to')).length > 0 && (
                         <div className="mt-3 space-y-2">
                           <div className="text-[10px] font-bold text-ink uppercase tracking-wider mb-1">Repair Logs & Comments</div>
-                          {ticket.comments.map(comment => {
+                          {ticket.comments.filter(c => !c.text.startsWith('System: Status changed to')).map(comment => {
                             const author = users.find(u => u.id === comment.userId);
                             return (
                               <div key={comment.id} className="text-xs border-l-2 border-border pl-3">
