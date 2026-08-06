@@ -154,7 +154,7 @@ export function TicketDetail({ ticketId, onBack }: { ticketId: string, onBack: (
           {/* Progress Tracker */}
           <div className="mb-10 pt-8 border-t border-slate-100">
               <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-8 text-center">Ticket Progress</h3>
-              <div className="flex justify-between relative max-w-4xl mx-auto">
+              <div className="flex justify-between relative max-w-4xl mx-auto px-4">
                   {[
                     { label: 'Submitted', key: 'NEW' },
                     { label: 'Received', key: 'RECEIVED' },
@@ -183,13 +183,17 @@ export function TicketDetail({ ticketId, onBack }: { ticketId: string, onBack: (
                     return (
                       <div key={index} className="flex flex-col items-center relative flex-1">
                         {!isLast && (
-                          <div className={`absolute left-[50%] right-[-50%] top-3 h-0.5 ${isCompleted ? 'bg-emerald-500' : 'bg-slate-200'}`} />
+                          <div className={`absolute left-[50%] right-[-50%] top-[14px] h-[3px] rounded-full transition-colors duration-500 ${isCompleted ? 'bg-emerald-500' : 'bg-slate-100'}`} />
                         )}
-                        <div className={`relative z-10 w-6 h-6 rounded-full flex items-center justify-center shrink-0 bg-white ${
-                            isCompleted ? 'bg-emerald-500' : isCurrent ? 'ring-4 ring-orange-100 border-2 border-orange-500' : 'border-2 border-slate-200'
+                        <div className={`relative z-10 w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-all duration-500 ${
+                            isCompleted 
+                              ? 'bg-emerald-500 shadow-sm shadow-emerald-200 border-2 border-emerald-500' 
+                              : isCurrent 
+                                ? 'bg-white ring-[6px] ring-orange-50 border-[3px] border-orange-500 shadow-lg shadow-orange-100/50' 
+                                : 'bg-white border-2 border-slate-200'
                         }`}>
                           {isCompleted && (
-                            <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3.5}>
                               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                             </svg>
                           )}
@@ -197,7 +201,7 @@ export function TicketDetail({ ticketId, onBack }: { ticketId: string, onBack: (
                             <div className="w-2.5 h-2.5 bg-orange-500 rounded-full"></div>
                           )}
                         </div>
-                        <span className={`text-xs mt-3 text-center ${isCompleted ? 'text-slate-700 font-semibold' : isCurrent ? 'text-orange-700 font-bold' : 'text-slate-400 font-medium'}`}>{step.label}</span>
+                        <span className={`text-xs mt-4 text-center transition-colors duration-300 ${isCompleted ? 'text-slate-800 font-bold' : isCurrent ? 'text-orange-600 font-bold' : 'text-slate-400 font-medium'}`}>{step.label}</span>
                         
                         {(isCompleted || isCurrent) && (() => {
                           let timestampStr = null;
@@ -217,7 +221,7 @@ export function TicketDetail({ ticketId, onBack }: { ticketId: string, onBack: (
                           }
                           if (timestampStr) {
                               return (
-                                  <span className="text-[10px] text-slate-400 mt-1 max-w-[80px] text-center">
+                                  <span className="text-[10px] text-slate-400 mt-1 max-w-[80px] text-center font-medium">
                                       {format(new Date(timestampStr), 'MMM d, h:mm a')}
                                   </span>
                               );
