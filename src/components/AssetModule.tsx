@@ -145,7 +145,7 @@ export function AssetDetail({
   onBack: () => void;
   onEdit?: () => void;
 }) {
-  const { assets, offices, tickets, currentUser } = useAppContext();
+  const { assets, offices, tickets, currentUser, users } = useAppContext();
   const asset = assets.find((a) => a.id === assetId);
 
   if (!asset) return null;
@@ -515,9 +515,29 @@ export function AssetDetail({
                       <div className="font-bold text-xs text-ink mb-1">
                         {ticket.subject}
                       </div>
-                      <p className="text-xs text-ink-muted leading-relaxed">
+                      <p className="text-xs text-ink-muted leading-relaxed mb-3">
                         {ticket.description}
                       </p>
+                      {ticket.ictRecommendation && (
+                        <div className="bg-bg/50 p-3 rounded-lg border border-border">
+                          <div className="text-[10px] font-bold text-ink uppercase tracking-wider mb-1">ICT Action / Recommendation</div>
+                          <p className="text-xs text-ink-muted">{ticket.ictRecommendation}</p>
+                        </div>
+                      )}
+                      {ticket.comments && ticket.comments.length > 0 && (
+                        <div className="mt-3 space-y-2">
+                          <div className="text-[10px] font-bold text-ink uppercase tracking-wider mb-1">Repair Logs & Comments</div>
+                          {ticket.comments.map(comment => {
+                            const author = users.find(u => u.id === comment.userId);
+                            return (
+                              <div key={comment.id} className="text-xs border-l-2 border-border pl-3">
+                                <span className="font-bold text-ink mr-2">{author?.name || 'Unknown'}</span>
+                                <span className="text-ink-muted">{comment.text}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </>
