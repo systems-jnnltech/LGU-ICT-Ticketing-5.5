@@ -206,11 +206,19 @@ export function TicketDetail({ ticketId, onBack }: { ticketId: string, onBack: (
                         6: 'CLOSED'
                       };
                       const s = statusMap[index];
-                      const historyItem = ticket.statusHistory?.find(h => h.status === s);
-                      if (historyItem) {
-                        timestampStr = historyItem.timestamp;
-                      } else if (isCurrent) {
-                        timestampStr = ticket.updatedAt;
+                      const systemComment = ticket.comments?.find(c => c.text === `System: Status changed to ${s}`);
+                      if (systemComment) {
+                        timestampStr = systemComment.createdAt;
+                      } else if (ticket.statusHistory) {
+                        const historyItem = ticket.statusHistory.find(h => h.status === s);
+                        if (historyItem) {
+                          timestampStr = historyItem.timestamp;
+                        }
+                      }
+                      
+                      // If we still don't have a timestamp, fallback to updatedAt so it doesn't disappear
+                      if (!timestampStr) {
+                         timestampStr = ticket.updatedAt;
                       }
                     }
                     if (timestampStr) {
@@ -370,11 +378,11 @@ export function TicketDetail({ ticketId, onBack }: { ticketId: string, onBack: (
           <div className="bg-surface rounded-xl shadow-sm border border-border overflow-hidden">
             <div className="px-5 py-3 border-b border-border bg-bg flex justify-between items-center">
               <h3 className="text-xs font-bold text-ink uppercase tracking-wider">Discussion</h3>
-              <span className="text-[10px] font-bold bg-white/10 text-ink-muted px-2 py-0.5 rounded-full">{ticket.comments?.length || 0}</span>
+              <span className="text-[10px] font-bold bg-white/10 text-ink-muted px-2 py-0.5 rounded-full">{ticket.comments?.filter(c => !c.text.startsWith('System: Status changed to')).length || 0}</span>
             </div>
             <div className="p-5 space-y-6">
-              {ticket.comments && ticket.comments.length > 0 ? (
-                ticket.comments.map(comment => {
+              {ticket.comments && ticket.comments.filter(c => !c.text.startsWith('System: Status changed to')).length > 0 ? (
+                ticket.comments.filter(c => !c.text.startsWith('System: Status changed to')).map(comment => {
                   const commentUser = users.find(u => u.id === comment.userId);
                   const isOwn = comment.userId === currentUser?.id;
                   
