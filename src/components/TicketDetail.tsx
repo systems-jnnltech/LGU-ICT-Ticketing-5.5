@@ -89,7 +89,7 @@ export function TicketDetail({ ticketId, onBack }: { ticketId: string, onBack: (
       <div className="bg-white p-6 md:p-8 rounded-[16px] shadow-sm border border-slate-200">
           <div className="flex flex-wrap items-center gap-3 mb-4">
               <span className="text-lg font-semibold text-slate-500">{ticket.ticketNumber}</span>
-              <span className={`px-2.5 py-1 rounded-md text-xs font-semibold uppercase tracking-wider ${ticket.status === 'CLOSED' ? 'bg-slate-100 text-slate-600' : ticket.status === 'RESOLVED' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'}`}>
+              <span className={`px-2.5 py-1 rounded-md text-xs font-semibold uppercase tracking-wider ${ticket.status === 'CLOSED' ? 'bg-slate-100 text-slate-600' : ticket.status === 'RESOLVED' ? 'bg-emerald-100 text-emerald-700' : 'bg-orange-100 text-orange-700'}`}>
                   {ticket.status}
               </span>
               <span className={`px-2.5 py-1 rounded-md text-xs font-semibold uppercase tracking-wider ${ticket.priority === 'Critical' ? 'bg-red-100 text-red-700' : ticket.priority === 'High' ? 'bg-orange-100 text-orange-700' : 'bg-amber-100 text-amber-700'}`}>
@@ -186,7 +186,7 @@ export function TicketDetail({ ticketId, onBack }: { ticketId: string, onBack: (
                           <div className={`absolute left-[50%] right-[-50%] top-3 h-0.5 ${isCompleted ? 'bg-emerald-500' : 'bg-slate-200'}`} />
                         )}
                         <div className={`relative z-10 w-6 h-6 rounded-full flex items-center justify-center shrink-0 bg-white ${
-                            isCompleted ? 'bg-emerald-500' : isCurrent ? 'ring-4 ring-blue-100 border-2 border-blue-500' : 'border-2 border-slate-200'
+                            isCompleted ? 'bg-emerald-500' : isCurrent ? 'ring-4 ring-orange-100 border-2 border-orange-500' : 'border-2 border-slate-200'
                         }`}>
                           {isCompleted && (
                             <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
@@ -194,10 +194,10 @@ export function TicketDetail({ ticketId, onBack }: { ticketId: string, onBack: (
                             </svg>
                           )}
                           {isCurrent && (
-                            <div className="w-2.5 h-2.5 bg-blue-500 rounded-full"></div>
+                            <div className="w-2.5 h-2.5 bg-orange-500 rounded-full"></div>
                           )}
                         </div>
-                        <span className={`text-xs mt-3 text-center ${isCompleted ? 'text-slate-700 font-semibold' : isCurrent ? 'text-blue-700 font-bold' : 'text-slate-400 font-medium'}`}>{step.label}</span>
+                        <span className={`text-xs mt-3 text-center ${isCompleted ? 'text-slate-700 font-semibold' : isCurrent ? 'text-orange-700 font-bold' : 'text-slate-400 font-medium'}`}>{step.label}</span>
                         
                         {(isCompleted || isCurrent) && (() => {
                           let timestampStr = null;
@@ -242,7 +242,7 @@ export function TicketDetail({ ticketId, onBack }: { ticketId: string, onBack: (
                       {currentUser?.role === 'Admin' && (
                           <div className="flex items-center gap-3">
                               <select 
-                                  className="px-4 py-2.5 bg-white border border-slate-300 rounded-lg text-sm font-medium outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 min-w-[200px]"
+                                  className="px-4 py-2.5 bg-white border border-slate-300 rounded-lg text-sm font-medium outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 min-w-[200px]"
                                   value={selectedAssignee}
                                   onChange={(e) => setSelectedAssignee(e.target.value)}
                               >
@@ -266,7 +266,7 @@ export function TicketDetail({ ticketId, onBack }: { ticketId: string, onBack: (
                       {currentUser?.role === 'ICT Support' && ticket.assignedToId === currentUser.id && (
                           <div className="flex flex-wrap gap-3">
                               {ticket.status === 'ASSIGNED' && (
-                                  <button onClick={() => handleStatusUpdate('IN PROGRESS')} className="px-5 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 shadow-sm transition-colors">
+                                  <button onClick={() => handleStatusUpdate('IN PROGRESS')} className="px-5 py-2.5 bg-orange-600 text-white rounded-lg text-sm font-semibold hover:bg-orange-700 shadow-sm transition-colors">
                                       Start Work
                                   </button>
                               )}
@@ -281,7 +281,7 @@ export function TicketDetail({ ticketId, onBack }: { ticketId: string, onBack: (
                                   </>
                               )}
                               {ticket.status === 'PENDING' && (
-                                  <button onClick={() => handleStatusUpdate('IN PROGRESS')} className="px-5 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 shadow-sm transition-colors">
+                                  <button onClick={() => handleStatusUpdate('IN PROGRESS')} className="px-5 py-2.5 bg-orange-600 text-white rounded-lg text-sm font-semibold hover:bg-orange-700 shadow-sm transition-colors">
                                       Resume Work
                                   </button>
                               )}
@@ -318,16 +318,16 @@ export function TicketDetail({ ticketId, onBack }: { ticketId: string, onBack: (
 
           {/* ICT Recommendation */}
           {(ticket.ictRecommendation || (currentUser?.role === 'ICT Support' && ticket.assignedToId === currentUser.id)) && (
-              <div className="bg-blue-50/50 rounded-[16px] shadow-sm border border-blue-100 overflow-hidden">
-                  <div className="px-6 py-4 border-b border-blue-100 bg-blue-50/80 flex justify-between items-center">
-                      <h3 className="text-sm font-bold text-blue-900">ICT Action / Recommendation</h3>
+              <div className="bg-orange-50/50 rounded-[16px] shadow-sm border border-orange-100 overflow-hidden">
+                  <div className="px-6 py-4 border-b border-orange-100 bg-orange-50/80 flex justify-between items-center">
+                      <h3 className="text-sm font-bold text-orange-900">ICT Action / Recommendation</h3>
                       {currentUser?.role === 'ICT Support' && ticket.assignedToId === currentUser.id && !isEditingRecommendation && (
                           <button 
                               onClick={() => {
                                   setRecommendationText(ticket.ictRecommendation || '');
                                   setIsEditingRecommendation(true);
                               }} 
-                              className="text-xs font-bold text-blue-600 hover:text-blue-800 transition-colors"
+                              className="text-xs font-bold text-orange-600 hover:text-orange-800 transition-colors"
                           >
                               Edit
                           </button>
@@ -337,7 +337,7 @@ export function TicketDetail({ ticketId, onBack }: { ticketId: string, onBack: (
                       {isEditingRecommendation ? (
                           <div className="space-y-4">
                               <textarea 
-                                  className="w-full p-4 bg-white border border-blue-200 rounded-xl text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 min-h-[100px]"
+                                  className="w-full p-4 bg-white border border-orange-200 rounded-xl text-sm outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 min-h-[100px]"
                                   placeholder="Detail the actions taken or recommended repairs..."
                                   value={recommendationText}
                                   onChange={(e) => setRecommendationText(e.target.value)}
@@ -351,15 +351,15 @@ export function TicketDetail({ ticketId, onBack }: { ticketId: string, onBack: (
                                   </button>
                                   <button 
                                       onClick={handleUpdateRecommendation}
-                                      className="px-5 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors shadow-sm"
+                                      className="px-5 py-2.5 bg-orange-600 text-white rounded-lg text-sm font-semibold hover:bg-orange-700 transition-colors shadow-sm"
                                   >
                                       Save
                                   </button>
                               </div>
                           </div>
                       ) : (
-                          <p className="text-sm text-blue-900 whitespace-pre-wrap leading-relaxed">
-                              {ticket.ictRecommendation ? ticket.ictRecommendation : <span className="text-blue-400 italic">No action or recommendation recorded yet.</span>}
+                          <p className="text-sm text-orange-900 whitespace-pre-wrap leading-relaxed">
+                              {ticket.ictRecommendation ? ticket.ictRecommendation : <span className="text-orange-400 italic">No action or recommendation recorded yet.</span>}
                           </p>
                       )}
                   </div>
@@ -382,7 +382,7 @@ export function TicketDetail({ ticketId, onBack }: { ticketId: string, onBack: (
                               <div key={comment.id} className={`flex gap-4 ${isOwn ? 'flex-row-reverse' : ''}`}>
                                   <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-white text-sm font-bold ${
                                       commentUser?.role === 'Admin' ? 'bg-slate-800' :
-                                      commentUser?.role === 'ICT Support' ? 'bg-blue-600' : 'bg-slate-400'
+                                      commentUser?.role === 'ICT Support' ? 'bg-orange-600' : 'bg-slate-400'
                                   }`}>
                                       {commentUser?.name.split(' ').map(n => n[0]).join('').substring(0,2)}
                                   </div>
@@ -393,7 +393,7 @@ export function TicketDetail({ ticketId, onBack }: { ticketId: string, onBack: (
                                       </div>
                                       <div className={`px-5 py-3 rounded-2xl text-sm ${
                                           isOwn 
-                                              ? 'bg-blue-600 text-white rounded-tr-none' 
+                                              ? 'bg-orange-600 text-white rounded-tr-none' 
                                               : 'bg-slate-50 border border-slate-200 text-slate-700 rounded-tl-none'
                                       }`}>
                                           {comment.text}
@@ -415,12 +415,12 @@ export function TicketDetail({ ticketId, onBack }: { ticketId: string, onBack: (
                               value={newCommentText}
                               onChange={(e) => setNewCommentText(e.target.value)}
                               placeholder="Type a message or update..."
-                              className="flex-1 bg-white border border-slate-300 rounded-xl px-5 py-3 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                              className="flex-1 bg-white border border-slate-300 rounded-xl px-5 py-3 text-sm outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
                           />
                           <button 
                               type="submit"
                               disabled={!newCommentText.trim()}
-                              className="bg-blue-600 text-white px-6 py-3 rounded-xl text-sm font-semibold disabled:opacity-50 hover:bg-blue-700 transition-colors shadow-sm"
+                              className="bg-orange-600 text-white px-6 py-3 rounded-xl text-sm font-semibold disabled:opacity-50 hover:bg-orange-700 transition-colors shadow-sm"
                           >
                               Send
                           </button>
