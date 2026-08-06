@@ -128,6 +128,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const { error } = await supabase.from('tickets').update(updates).eq('id', ticketId);
       if (error) throw error;
       
+      if (currentUser) {
+        await supabase.from('ticket_comments').insert({
+          ticket_id: ticketId,
+          author_id: currentUser.id,
+          content: `System: Status changed to ${status}`
+        });
+      }
+      
       if (status === 'RESOLVED' || status === 'CLOSED') {
         const ticket = tickets.find(t => t.id === ticketId);
         if (ticket && ticket.assetId && currentUser) {
