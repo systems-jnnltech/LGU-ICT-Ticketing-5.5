@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAppContext } from '../store/AppContext';
-import { LayoutDashboard, Ticket, MonitorSmartphone, LogOut, Menu, UserCircle, Building2, BarChart3, Sun, Moon, Users } from 'lucide-react';
+import { LayoutDashboard, Ticket, MonitorSmartphone, LogOut, Menu, UserCircle, Building2, BarChart3, Sun, Moon, Users, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export function Layout({ children, currentTab, setCurrentTab }: { children: React.ReactNode, currentTab: string, setCurrentTab: (tab: string) => void }) {
   const { currentUser, users, login, logout, theme, toggleTheme } = useAppContext();
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   if (!currentUser) return null;
 
@@ -22,37 +23,60 @@ export function Layout({ children, currentTab, setCurrentTab }: { children: Reac
 
   return (
     <div className="h-screen bg-bg text-ink flex">
-      {/* COMPACT SIDEBAR */}
-      <aside className="w-[80px] bg-bg border-r border-border flex flex-col items-center py-6">
-        <div className="w-12 h-12 flex items-center justify-center mb-8">
-          <img src="/LGU_LOGO1.png" alt="LGU Logo" className="w-full h-full object-contain" />
+      {/* SIDEBAR */}
+      <aside className={`transition-all duration-300 ease-in-out ${isCollapsed ? 'w-[80px]' : 'w-[240px]'} bg-bg border-r border-border flex flex-col py-6 relative z-20`}>
+        <div className={`flex items-center mb-8 px-4 ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
+          <div className="flex items-center gap-3 overflow-hidden">
+            <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center">
+              <img src="/LGU_LOGO1.png" alt="LGU Logo" className="w-full h-full object-contain" />
+            </div>
+            {!isCollapsed && <span className="font-bold text-sm text-ink whitespace-nowrap">LGU ICT</span>}
+          </div>
+          <button 
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className={`p-1.5 rounded-lg text-ink-muted hover:text-accent hover:bg-accent/10 transition-colors ${isCollapsed ? 'absolute -right-3.5 bg-surface border border-border rounded-full shadow-sm' : ''}`}
+            style={isCollapsed ? { top: '32px' } : {}}
+            title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-5 h-5" />}
+          </button>
         </div>
-        <nav className="flex flex-col gap-6">
+        <nav className="flex flex-col gap-2 px-3">
           {navItems.map(item => (
             <div
               key={item.id}
-              title={item.label}
+              title={isCollapsed ? item.label : undefined}
               onClick={() => !item.disabled && setCurrentTab(item.id)}
-              className={`p-2.5 rounded-lg cursor-pointer transition-colors ${
+              className={`flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-colors ${
                 currentTab === item.id 
                   ? 'text-accent bg-accent/10' 
                   : item.disabled ? 'text-ink-muted/50 cursor-not-allowed' : 'text-ink-muted hover:text-accent hover:bg-accent/10'
               }`}
             >
-              <item.icon className="w-5 h-5" />
+              <item.icon className="w-5 h-5 flex-shrink-0" style={isCollapsed ? { margin: '0 auto' } : {}} />
+              {!isCollapsed && <span className="font-medium text-sm whitespace-nowrap overflow-hidden">{item.label}</span>}
             </div>
           ))}
         </nav>
-        <div className="mt-auto flex flex-col gap-6 items-center">
-          <div className="w-8 h-8 rounded-full bg-border border border-accent flex items-center justify-center text-[10px] font-bold text-ink">
-            {currentUser.name.substring(0, 2).toUpperCase()}
+        <div className="mt-auto flex flex-col gap-4 px-3 items-center">
+          <div className={`flex items-center gap-3 p-2 w-full ${isCollapsed ? 'justify-center' : 'bg-surface/50 rounded-xl border border-border/50 shadow-sm'}`}>
+            <div className="w-8 h-8 flex-shrink-0 rounded-full bg-border border border-accent flex items-center justify-center text-[10px] font-bold text-ink">
+              {currentUser.name.substring(0, 2).toUpperCase()}
+            </div>
+            {!isCollapsed && (
+              <div className="flex-1 overflow-hidden">
+                <div className="text-xs font-semibold text-ink truncate">{currentUser.name}</div>
+                <div className="text-[10px] text-ink-muted truncate">{currentUser.role}</div>
+              </div>
+            )}
           </div>
           <div 
-            className="p-2.5 rounded-lg cursor-pointer text-ink-muted hover:text-accent hover:bg-accent/10 transition-colors"
+            className={`flex items-center gap-3 p-2.5 w-full rounded-lg cursor-pointer text-ink-muted hover:text-accent hover:bg-accent/10 transition-colors ${isCollapsed ? 'justify-center' : ''}`}
             title="Sign Out"
             onClick={logout}
           >
-            <LogOut className="w-5 h-5" />
+            <LogOut className="w-5 h-5 flex-shrink-0" style={isCollapsed ? { margin: '0 auto' } : {}} />
+            {!isCollapsed && <span className="font-medium text-sm whitespace-nowrap">Sign Out</span>}
           </div>
         </div>
       </aside>
