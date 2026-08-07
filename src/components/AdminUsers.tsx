@@ -3,7 +3,7 @@ import { Building2, Plus, Edit2, Mail, Check, X, Shield, User as UserIcon } from
 import { toast } from 'sonner';
 import { useAppContext } from '../store/AppContext';
 import { Role } from '../store/AuthContext';
-import { supabase } from '../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 export function AdminUsers() {
   const { offices, users, updateUserRole } = useAppContext();
