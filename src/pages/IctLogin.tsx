@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../store/AuthContext';
-import { ShieldCheck, ArrowLeft, Mail, Lock, Layers, Activity } from 'lucide-react';
+import { ShieldCheck, ArrowLeft, Mail, Lock, Layers, Activity, Eye, EyeOff } from 'lucide-react';
 import { Link, Navigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -8,6 +8,7 @@ export function IctLogin() {
   const { signInWithEmail, user, profile, loading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (loading) {
@@ -155,13 +156,20 @@ export function IctLogin() {
                     <Lock className="h-5 w-5 text-ink-muted" />
                   </div>
                   <input
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="block w-full pl-10 pr-3 py-2.5 border border-border rounded-xl bg-bg text-ink text-sm focus:ring-accent focus:border-accent"
+                    className="block w-full pl-10 pr-10 py-2.5 border border-border rounded-xl bg-bg text-ink text-sm focus:ring-accent focus:border-accent"
                     placeholder="••••••••"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-ink-muted hover:text-ink transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
                 </div>
               </div>
 
