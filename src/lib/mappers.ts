@@ -1,3 +1,21 @@
+const parseNumericCost = (val: any) => {
+  if (val === null || val === undefined) return null;
+  if (typeof val === 'number') return isNaN(val) ? null : val;
+  if (typeof val === 'string') {
+    if (!val || val.trim() === '' || val.toUpperCase().includes('N/A')) return null;
+    const cleaned = val.replace(/[^0-9.]/g, '');
+    if (!cleaned) return null;
+    const parsed = parseFloat(cleaned);
+    return isNaN(parsed) ? null : parsed;
+  }
+  return null;
+};
+
+const parseDateValue = (val: any) => {
+  if (!val || typeof val !== 'string' || val.toUpperCase().includes('N/A') || val.trim() === '') return null;
+  return val.split('T')[0];
+};
+
 export const mapAssetFromDB = (dbAsset: any) => ({
   id: dbAsset.id,
   assetCode: dbAsset.property_number || dbAsset.id,
@@ -18,9 +36,9 @@ export const mapAssetFromDB = (dbAsset: any) => ({
   microsoftOffice: dbAsset.microsoft_office,
   condition: dbAsset.condition,
   operationalStatus: dbAsset.operational_status,
-  acquisitionCost: dbAsset.acquisition_cost,
-  dateAcquired: dbAsset.date_acquired,
-  dateAudited: dbAsset.date_audited,
+  acquisitionCost: dbAsset.acquisition_cost != null ? `PHP ${Number(dbAsset.acquisition_cost).toLocaleString('en-US', { minimumFractionDigits: 2 })}` : 'N/A',
+  dateAcquired: dbAsset.date_acquired || 'N/A',
+  dateAudited: dbAsset.date_audited || 'N/A',
   auditedBy: dbAsset.audited_by,
   remarks: dbAsset.remarks,
   history: dbAsset.asset_history ? dbAsset.asset_history.map((h: any) => ({
@@ -37,25 +55,25 @@ export const mapAssetToDB = (asset: any) => ({
   department_id: asset.officeId || null,
   equipment_type: asset.equipmentType,
   property_number: asset.assetCode || asset.propertyNumber || null,
-  inventory_number: asset.inventoryNumber,
-  brand: asset.brand,
-  model: asset.model,
-  serial_number: asset.serialNumber,
-  hostname: asset.hostname,
-  processor: asset.processor,
-  memory: asset.memory,
-  disk_storage: asset.diskStorage,
-  assigned_to: asset.assignedTo,
-  exact_location: asset.exactLocation,
-  operating_system: asset.operatingSystem,
-  microsoft_office: asset.microsoftOffice,
-  condition: asset.condition,
-  operational_status: asset.operationalStatus,
-  acquisition_cost: asset.acquisitionCost || null,
-  date_acquired: asset.dateAcquired || null,
-  date_audited: asset.dateAudited || null,
-  audited_by: asset.auditedBy,
-  remarks: asset.remarks,
+  inventory_number: asset.inventoryNumber || null,
+  brand: asset.brand || null,
+  model: asset.model || null,
+  serial_number: asset.serialNumber || null,
+  hostname: asset.hostname || null,
+  processor: asset.processor || null,
+  memory: asset.memory || null,
+  disk_storage: asset.diskStorage || null,
+  assigned_to: asset.assignedTo || null,
+  exact_location: asset.exactLocation || null,
+  operating_system: asset.operatingSystem || null,
+  microsoft_office: asset.microsoftOffice || null,
+  condition: asset.condition || 'Good',
+  operational_status: asset.operationalStatus || 'Operational',
+  acquisition_cost: parseNumericCost(asset.acquisitionCost),
+  date_acquired: parseDateValue(asset.dateAcquired),
+  date_audited: parseDateValue(asset.dateAudited),
+  audited_by: asset.auditedBy || null,
+  remarks: asset.remarks || null,
 });
 
 export const mapTicketFromDB = (dbTicket: any) => {
