@@ -1,8 +1,9 @@
 import { QRCodeSVG } from 'qrcode.react';
 import React, { useState } from "react";
 import { useAppContext } from "../store/AppContext";
-import { ArrowLeft, Monitor, Search, Edit2, Plus, X } from "lucide-react";
+import { ArrowLeft, Monitor, Search, Edit2, Plus, X, Upload, Database } from "lucide-react";
 import { format } from "date-fns";
+import { BulkImportModal } from "./BulkImportModal";
 
 export function AssetList({
   onSelectAsset,
@@ -13,6 +14,7 @@ export function AssetList({
 }) {
   const { assets, offices, currentUser } = useAppContext();
   const [searchQuery, setSearchQuery] = useState("");
+  const [isImportOpen, setIsImportOpen] = useState(false);
 
   let displayedAssets =
     currentUser?.role === "Department User"
@@ -28,10 +30,13 @@ export function AssetList({
       displayedAssets = displayedAssets.filter(
         (a) =>
           a.id.toLowerCase().includes(lowerQuery) ||
+          a.assetCode?.toLowerCase().includes(lowerQuery) ||
+          a.propertyNumber?.toLowerCase().includes(lowerQuery) ||
           a.equipmentType.toLowerCase().includes(lowerQuery) ||
           a.brand?.toLowerCase().includes(lowerQuery) ||
           a.model?.toLowerCase().includes(lowerQuery) ||
-          a.propertyNumber?.toLowerCase().includes(lowerQuery) ||
+          a.serialNumber?.toLowerCase().includes(lowerQuery) ||
+          a.assignedTo?.toLowerCase().includes(lowerQuery) ||
           offices.find((o) => o.id === a.officeId)?.name.toLowerCase().includes(lowerQuery) ||
           offices.find((o) => o.id === a.officeId)?.acronym?.toLowerCase().includes(lowerQuery)
       );
@@ -46,27 +51,26 @@ export function AssetList({
             Equipment
           </h1>
           <p className="text-ink-muted text-[0.9rem]">
-            Municipal ICT asset oversight and registry management
+            Municipal ICT asset oversight, registry management & inventory seeding
           </p>
         </div>
         {currentUser?.role === "Admin" && (
-          <button
-            onClick={onCreateAsset}
-            className="flex items-center gap-2 bg-accent text-white px-[1.4rem] py-[0.8rem] rounded-lg font-semibold text-[0.85rem] shadow-[0_0_20px_rgba(99,102,241,0.4)] cursor-pointer border-none"
-          >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="3"
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={() => setIsImportOpen(true)}
+              className="flex items-center gap-2 bg-surface border border-border text-ink px-4 py-2.5 rounded-lg font-semibold text-xs hover:bg-bg transition-colors shadow-xs cursor-pointer"
             >
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-            New Asset
-          </button>
+              <Upload className="w-4 h-4 text-accent" />
+              <span>Bulk Import / Seed</span>
+            </button>
+            <button
+              onClick={onCreateAsset}
+              className="flex items-center gap-2 bg-accent text-white px-5 py-2.5 rounded-lg font-semibold text-xs shadow-md hover:bg-accent/90 transition-colors cursor-pointer border-none"
+            >
+              <Plus className="w-4 h-4" />
+              <span>New Asset</span>
+            </button>
+          </div>
         )}
       </section>
 
@@ -74,15 +78,15 @@ export function AssetList({
         <div className="p-5 border-b border-border flex justify-between items-center">
           <div className="text-[0.9rem] font-semibold flex items-center gap-2">
             <div className="w-2 h-2 bg-accent rounded-full"></div>
-            Asset Registry
+            Asset Registry ({displayedAssets.length} Equipment Items)
           </div>
           <div className="relative">
             <input
               type="text"
-              placeholder="Filter by ID, Name or Office..."
+              placeholder="Filter by Asset Code, Name, Serial or Office..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-bg border border-border rounded-md text-ink px-4 py-2 text-[0.75rem] w-[280px] outline-none"
+              className="bg-bg border border-border rounded-md text-ink px-4 py-2 text-[0.75rem] w-[300px] outline-none focus:border-accent"
             />
           </div>
         </div>
@@ -90,7 +94,7 @@ export function AssetList({
         <table className="w-full text-left border-collapse">
           <thead className="bg-surface/2">
             <tr className="font-mono text-[0.7rem] uppercase tracking-[0.1em] text-ink-muted">
-              <th className="px-6 py-4 font-normal">Property ID</th>
+              <th className="px-6 py-4 font-normal">Asset Code</th>
               <th className="px-6 py-4 font-normal">Item Details</th>
               <th className="px-6 py-4 font-normal">Location</th>
               <th className="px-6 py-4 font-normal">Status</th>
@@ -107,16 +111,16 @@ export function AssetList({
                   className="hover:bg-surface/2 cursor-pointer transition-colors group"
                 >
                   <td className="px-6 py-5 border-b border-border group-last:border-none font-mono text-accent font-medium text-[0.8rem]">
-                    {asset.propertyNumber}
+                    {asset.assetCode || asset.propertyNumber || asset.id}
                   </td>
                   <td className="px-6 py-5 border-b border-border group-last:border-none">
-                    <div className="text-[0.85rem]">{asset.equipmentType}</div>
+                    <div className="text-[0.85rem] font-semibold">{asset.equipmentType}</div>
                     <div className="text-[0.75rem] text-ink-muted mt-0.5">
                       {asset.brand} {asset.model}
                     </div>
                   </td>
                   <td className="px-6 py-5 border-b border-border group-last:border-none text-[0.85rem]">
-                    {office?.name}
+                    {office?.name || 'General Office'}
                   </td>
                   <td className="px-6 py-5 border-b border-border group-last:border-none">
                     <span
@@ -138,6 +142,11 @@ export function AssetList({
           </tbody>
         </table>
       </div>
+
+      <BulkImportModal
+        isOpen={isImportOpen}
+        onClose={() => setIsImportOpen(false)}
+      />
     </div>
   );
 }
@@ -183,8 +192,8 @@ export function AssetDetail({
               {asset.brand} {asset.model}
             </div>
             <div className="flex items-center space-x-2 mt-2">
-              <span className="text-[10px] font-bold text-accent bg-accent/10 px-2 py-0.5 rounded border border-accent/20">
-                {asset.propertyNumber}
+              <span className="text-[10px] font-bold text-accent bg-accent/10 px-2 py-0.5 rounded border border-accent/20 font-mono">
+                {asset.assetCode || asset.propertyNumber}
               </span>
               <span
                 className={`text-[10px] font-bold px-2 py-0.5 rounded ${
@@ -260,10 +269,18 @@ export function AssetDetail({
             <div className="p-5 grid grid-cols-2 gap-y-5 gap-x-4">
               <div>
                 <div className="text-[10px] font-bold uppercase text-ink-muted tracking-wider">
+                  Asset Code
+                </div>
+                <div className="font-medium text-sm text-accent font-mono mt-1">
+                  {asset.assetCode || asset.propertyNumber || asset.id}
+                </div>
+              </div>
+              <div>
+                <div className="text-[10px] font-bold uppercase text-ink-muted tracking-wider">
                   Office
                 </div>
                 <div className="font-medium text-sm text-ink mt-1">
-                  {office?.name}
+                  {office?.name || 'General Office'}
                 </div>
               </div>
               <div>
@@ -279,15 +296,7 @@ export function AssetDetail({
                   Property Number
                 </div>
                 <div className="font-medium text-sm text-ink mt-1">
-                  {asset.propertyNumber}
-                </div>
-              </div>
-              <div>
-                <div className="text-[10px] font-bold uppercase text-ink-muted tracking-wider">
-                  Inventory Number
-                </div>
-                <div className="font-medium text-sm text-ink mt-1">
-                  {asset.inventoryNumber}
+                  {asset.propertyNumber || 'N/A'}
                 </div>
               </div>
             </div>
