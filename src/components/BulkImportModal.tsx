@@ -76,10 +76,11 @@ export function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImportModalP
               });
               csvAssets.push({
                 assetCode: obj.assetCode || obj.asset_code || obj['Asset Code'] || `ICT-IMPORT-${i}`,
+                propertyNumber: obj.propertyNumber || obj.property_number || obj['Property Number'] || '',
                 equipmentType: obj.equipmentType || obj.equipment_type || obj['Type'] || 'Printer',
                 brand: obj.brand || obj['Brand'] || '',
                 model: obj.model || obj['Model'] || '',
-                serialNumber: obj.serialNumber || obj.serial_number || obj['Serial'] || '',
+                serialNumber: obj.serialNumber || obj.serial_number || obj['Serial Number'] || obj['Serial'] || '',
                 officeAcronym: obj.officeAcronym || obj.office_acronym || obj['Office'] || '',
                 assignedTo: obj.assignedTo || obj.assigned_to || obj['Assigned To'] || '',
                 condition: obj.condition || obj['Condition'] || 'Good',
