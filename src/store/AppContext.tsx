@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { User, Ticket, Asset, Office, mockCategories } from './mockData';
+import { User, Ticket, Asset, Office, mockCategories, mockTickets, mockAssets, mockOffices, mockUsers } from './mockData';
 import { useAuth } from './AuthContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import { mapAssetFromDB, mapAssetToDB, mapTicketFromDB, mapTicketToDB, mapUserFromDB, mapOfficeFromDB } from '../lib/mappers';
+import { mapAssetFromDB, mapAssetToDB, mapTicketFromDB, mapTicketToDB, mapUserFromDB, mapOfficeFromDB, sanitizeDepartmentId } from '../lib/mappers';
 import { toast } from 'sonner';
 
 interface AppContextType {
@@ -33,10 +33,10 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const { profile, signOut } = useAuth();
-  const [tickets, setTickets] = useState<Ticket[]>([]);
-  const [assets, setAssets] = useState<Asset[]>([]);
-  const [offices, setOffices] = useState<Office[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
+  const [tickets, setTickets] = useState<Ticket[]>(mockTickets);
+  const [assets, setAssets] = useState<Asset[]>(mockAssets);
+  const [offices, setOffices] = useState<Office[]>(mockOffices);
+  const [users, setUsers] = useState<User[]>(mockUsers);
   const [authError, setAuthError] = useState<string | null>(null);
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     const saved = localStorage.getItem('theme');
@@ -80,7 +80,23 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
       if (ticketsRes.data) setTickets(ticketsRes.data.map(mapTicketFromDB));
       if (assetsRes.data) setAssets(assetsRes.data.map(mapAssetFromDB));
-      if (officesRes.data) setOffices(officesRes.data.map(mapOfficeFromDB));
+      if (officesRes.data && officesRes.data.length > 0) {
+        setOffices(officesRes.data.map(mapOfficeFromDB));
+      } else {
+        try {
+          const officesToInsert = mockOffices.map(o => ({
+            name: o.name,
+            acronym: o.acronym || null,
+            email: o.email || null
+          }));
+          const { data: inserted } = await supabase.from('departments').insert(officesToInsert).select();
+          if (inserted && inserted.length > 0) {
+            setOffices(inserted.map(mapOfficeFromDB));
+          }
+        } catch (e) {
+          console.warn('Auto-seed departments note:', e);
+        }
+      }
       if (usersRes.data) setUsers(usersRes.data.map(mapUserFromDB));
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -288,9 +304,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   
   const updateUserRole = async (userId: string, role: string, departmentId: string | null) => {
     try {
+      const sanitizedDeptId = sanitizeDepartmentId(departmentId);
       const { error } = await supabase
         .from('profiles')
-        .update({ role, department_id: departmentId })
+        .update({ role, department_id: sanitizedDeptId })
         .eq('id', userId);
         
       if (error) throw error;
