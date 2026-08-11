@@ -16,6 +16,17 @@ const parseDateValue = (val: any) => {
   return val.split('T')[0];
 };
 
+const isValidUUID = (str: any) => {
+  if (typeof str !== 'string') return false;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+};
+
+export const sanitizeDepartmentId = (id: any) => {
+  if (!id || typeof id !== 'string') return null;
+  if (isValidUUID(id)) return id;
+  return null;
+};
+
 export const mapAssetFromDB = (dbAsset: any) => ({
   id: dbAsset.id,
   assetCode: dbAsset.property_number || dbAsset.id,
@@ -52,7 +63,7 @@ export const mapAssetFromDB = (dbAsset: any) => ({
 });
 
 export const mapAssetToDB = (asset: any) => ({
-  department_id: asset.officeId || null,
+  department_id: sanitizeDepartmentId(asset.officeId),
   equipment_type: asset.equipmentType,
   property_number: asset.assetCode || asset.propertyNumber || null,
   inventory_number: asset.inventoryNumber || null,
@@ -118,7 +129,7 @@ export const mapTicketToDB = (ticket: any) => ({
   category: ticket.categoryId,
   reported_by: ticket.requesterId,
   assigned_to: ticket.assignedToId,
-  department_id: ticket.officeId,
+  department_id: sanitizeDepartmentId(ticket.officeId),
   recommendation: ticket.ictRecommendation
 });
 
