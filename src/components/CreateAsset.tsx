@@ -7,6 +7,7 @@ export function CreateAsset({ onBack, assetToEdit }: { onBack: () => void, asset
   const { offices, createNewAsset, updateExistingAsset } = useAppContext();
   
   const [formData, setFormData] = useState({
+    assetCode: assetToEdit?.assetCode || assetToEdit?.propertyNumber || `ICT-2026-M${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(Math.floor(Math.random() * 100000)).padStart(6, '0')}`,
     officeId: assetToEdit?.officeId || '',
     equipmentType: assetToEdit?.equipmentType || '',
     propertyNumber: assetToEdit?.propertyNumber || '',
@@ -101,6 +102,10 @@ export function CreateAsset({ onBack, assetToEdit }: { onBack: () => void, asset
             icon={<Database className="w-5 h-5" />}
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <FormField label="Asset Code" required>
+                <input name="assetCode" required value={formData.assetCode} onChange={handleChange} placeholder="e.g. ICT-2026-M03-000135" className="w-full bg-surface border border-border rounded-lg px-4 py-2 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent font-mono" />
+              </FormField>
+
               <FormField label="Office" required>
                 <select name="officeId" required value={formData.officeId} onChange={handleChange} className="w-full bg-surface border border-border rounded-lg px-4 py-2 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent">
                   <option value="" disabled>Select office</option>
