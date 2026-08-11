@@ -4,6 +4,7 @@ import { useAppContext } from "../store/AppContext";
 import { ArrowLeft, Monitor, Search, Edit2, Plus, X, Upload, Database } from "lucide-react";
 import { format } from "date-fns";
 import { BulkImportModal } from "./BulkImportModal";
+import { findOfficeForAsset } from "../lib/mappers";
 
 export function AssetList({
   onSelectAsset,
@@ -37,8 +38,8 @@ export function AssetList({
           a.model?.toLowerCase().includes(lowerQuery) ||
           a.serialNumber?.toLowerCase().includes(lowerQuery) ||
           a.assignedTo?.toLowerCase().includes(lowerQuery) ||
-          offices.find((o) => o.id === a.officeId)?.name.toLowerCase().includes(lowerQuery) ||
-          offices.find((o) => o.id === a.officeId)?.acronym?.toLowerCase().includes(lowerQuery)
+          (offices.find((o) => o.id === a.officeId) || findOfficeForAsset(a, offices))?.name.toLowerCase().includes(lowerQuery) ||
+          (offices.find((o) => o.id === a.officeId) || findOfficeForAsset(a, offices))?.acronym?.toLowerCase().includes(lowerQuery)
       );
     }
   }
@@ -103,7 +104,7 @@ export function AssetList({
           </thead>
           <tbody>
             {displayedAssets.map((asset) => {
-              const office = offices.find((o) => o.id === asset.officeId);
+              const office = offices.find((o) => o.id === asset.officeId) || findOfficeForAsset(asset, offices);
               return (
                 <tr
                   key={asset.id}
@@ -165,7 +166,7 @@ export function AssetDetail({
   const [showQR, setShowQR] = React.useState(false);
 
   if (!asset) return null;
-  const office = offices.find((o) => o.id === asset.officeId);
+  const office = offices.find((o) => o.id === asset.officeId) || findOfficeForAsset(asset, offices);
   const relatedTickets = tickets.filter((t) => t.assetId === asset.id);
 
   return (
