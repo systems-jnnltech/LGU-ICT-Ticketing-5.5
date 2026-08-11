@@ -1,8 +1,9 @@
 export const mapAssetFromDB = (dbAsset: any) => ({
   id: dbAsset.id,
+  assetCode: dbAsset.asset_code || dbAsset.property_number || dbAsset.id,
   officeId: dbAsset.department_id,
   equipmentType: dbAsset.equipment_type,
-  propertyNumber: dbAsset.property_number,
+  propertyNumber: dbAsset.property_number || dbAsset.asset_code,
   inventoryNumber: dbAsset.inventory_number,
   brand: dbAsset.brand,
   model: dbAsset.model,
@@ -35,7 +36,8 @@ export const mapAssetFromDB = (dbAsset: any) => ({
 export const mapAssetToDB = (asset: any) => ({
   department_id: asset.officeId || null,
   equipment_type: asset.equipmentType,
-  property_number: asset.propertyNumber,
+  asset_code: asset.assetCode || asset.propertyNumber || null,
+  property_number: asset.propertyNumber || asset.assetCode || null,
   inventory_number: asset.inventoryNumber,
   brand: asset.brand,
   model: asset.model,
