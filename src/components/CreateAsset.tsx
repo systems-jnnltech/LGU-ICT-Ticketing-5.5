@@ -2,13 +2,18 @@ import React, { useState } from 'react';
 import { useAppContext } from '../store/AppContext';
 import { ArrowLeft, Monitor, Database, UserCheck, HardDrive, ShieldCheck, FileCheck } from 'lucide-react';
 import { Toast, ConfirmModal } from '../lib/toast';
+import { findOfficeForAsset } from '../lib/mappers';
 
 export function CreateAsset({ onBack, assetToEdit }: { onBack: () => void, assetToEdit?: any }) {
   const { offices, createNewAsset, updateExistingAsset } = useAppContext();
   
+  const initialOfficeId = assetToEdit?.officeId && offices.some(o => o.id === assetToEdit.officeId)
+    ? assetToEdit.officeId
+    : (assetToEdit ? findOfficeForAsset(assetToEdit, offices)?.id || '' : '');
+
   const [formData, setFormData] = useState({
     assetCode: assetToEdit?.assetCode || assetToEdit?.propertyNumber || `ICT-2026-M${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(Math.floor(Math.random() * 100000)).padStart(6, '0')}`,
-    officeId: assetToEdit?.officeId || '',
+    officeId: initialOfficeId,
     equipmentType: assetToEdit?.equipmentType || '',
     propertyNumber: assetToEdit?.propertyNumber || '',
     inventoryNumber: assetToEdit?.inventoryNumber || '',
