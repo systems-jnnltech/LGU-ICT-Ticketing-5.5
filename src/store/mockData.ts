@@ -17,6 +17,7 @@ export interface Office {
 
 export interface Asset {
   id: string;
+  assetCode?: string;
   officeId: string;
   equipmentType: string;
   propertyNumber: string;
@@ -146,58 +147,10 @@ export const mockCategories = [
   { id: 'cat_net', name: 'Network' },
 ];
 
-export let mockAssets: Asset[] = [
-  {
-    id: 'ast_1',
-    officeId: 'off_1',
-    equipmentType: 'Desktop Computer',
-    propertyNumber: '2026-ICT-00125',
-    inventoryNumber: 'INV-125',
-    brand: 'Dell',
-    model: 'OptiPlex 7010',
-    serialNumber: 'SN-DELL-123',
-    assignedTo: 'Juan Dela Cruz',
-    condition: 'Poor',
-    operationalStatus: 'Non-Operational',
-    hostname: 'MAO-DESK-01',
-    processor: 'Intel Core i5-10500',
-    memory: '8GB DDR4',
-    diskStorage: '256GB NVMe SSD',
-    operatingSystem: 'Windows 10 Pro',
-    microsoftOffice: 'Office 2019 Standard',
-    exactLocation: 'Desk 4, East Wing',
-    acquisitionCost: 'PHP 45,000.00',
-    dateAcquired: '2021-05-15',
-    dateAudited: '2025-11-20',
-    auditedBy: 'ICT Support 1',
-    remarks: 'Motherboard failure. Pending replacement parts.'
-  },
-  {
-    id: 'ast_2',
-    officeId: 'off_2',
-    equipmentType: 'Laptop',
-    propertyNumber: '2026-ICT-00126',
-    inventoryNumber: 'INV-126',
-    brand: 'Lenovo',
-    model: 'ThinkPad T14',
-    serialNumber: 'SN-LEN-456',
-    assignedTo: 'Mayor',
-    condition: 'Excellent',
-    operationalStatus: 'Operational',
-    hostname: 'MAYOR-LT-01',
-    processor: 'Intel Core i7-1165G7',
-    memory: '16GB DDR4',
-    diskStorage: '512GB NVMe SSD',
-    operatingSystem: 'Windows 11 Pro',
-    microsoftOffice: 'Microsoft 365 Apps',
-    exactLocation: 'Mayor\'s Private Office',
-    acquisitionCost: 'PHP 75,000.00',
-    dateAcquired: '2022-08-10',
-    dateAudited: '2026-01-15',
-    auditedBy: 'System Admin',
-    remarks: 'In pristine condition.'
-  }
-];
+import { INITIAL_MUNICIPAL_ASSETS, convertRawToAsset } from '../data/initialAssets';
+
+export let mockAssets: Asset[] = INITIAL_MUNICIPAL_ASSETS.map(raw => convertRawToAsset(raw, mockOffices));
+
 
 export let mockTickets: Ticket[] = [
   {
