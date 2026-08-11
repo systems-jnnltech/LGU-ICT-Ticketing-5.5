@@ -1453,7 +1453,7 @@ export function convertRawToAsset(raw: ImportedAssetRaw, officesList: { id: stri
     assetCode: raw.assetCode,
     officeId: officeId,
     equipmentType: raw.equipmentType || 'Equipment',
-    propertyNumber: raw.propertyNumber || raw.assetCode || 'N/A',
+    propertyNumber: raw.propertyNumber !== undefined && raw.propertyNumber !== null && raw.propertyNumber !== '' ? raw.propertyNumber : '',
     inventoryNumber: raw.inventoryNumber || '',
     brand: raw.brand || 'Generic',
     model: raw.model || 'Standard Model',
