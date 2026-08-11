@@ -27,6 +27,48 @@ export const sanitizeDepartmentId = (id: any) => {
   return null;
 };
 
+export function findOfficeForAsset(asset: any, offices: { id: string; name: string; acronym?: string }[]) {
+  if (!offices || offices.length === 0) return null;
+
+  // 1. Direct match by ID
+  if (asset.officeId) {
+    const direct = offices.find(o => o.id === asset.officeId);
+    if (direct) return direct;
+  }
+
+  const textToSearch = `${asset.officeName || ''} ${asset.officeAcronym || ''} ${asset.exactLocation || ''} ${asset.remarks || ''}`.trim().toLowerCase();
+  if (!textToSearch) return null;
+
+  // 2. Match by exact office acronym
+  for (const office of offices) {
+    if (office.acronym && office.acronym.trim()) {
+      const acr = office.acronym.trim().toLowerCase();
+      const regex = new RegExp(`\\b${acr.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')}\\b`, 'i');
+      if (regex.test(textToSearch)) {
+        return office;
+      }
+    }
+  }
+
+  // 3. Match by full or partial office name
+  for (const office of offices) {
+    const nameLower = office.name.toLowerCase();
+    if (textToSearch.includes(nameLower) || nameLower.includes(textToSearch)) {
+      return office;
+    }
+  }
+
+  // 4. Keyword match
+  for (const office of offices) {
+    if (office.acronym) {
+      const acr = office.acronym.trim().toLowerCase();
+      if (textToSearch.includes(acr)) return office;
+    }
+  }
+
+  return null;
+}
+
 export const mapAssetFromDB = (dbAsset: any) => ({
   id: dbAsset.id,
   assetCode: dbAsset.property_number || dbAsset.id,
