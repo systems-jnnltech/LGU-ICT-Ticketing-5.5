@@ -113,7 +113,10 @@ export let mockOffices: Office[] = [
   { id: 'off_30', name: 'Mayor\'s Office - Nutrition Section', acronym: 'Nutrition', email: 'nutrition@malungon.gov.ph' },
   { id: 'off_31', name: 'Office of the Municipal Agriculturist', acronym: 'OMAG', email: 'agri@malungon.gov.ph' },
   { id: 'off_32', name: 'People\'s Law Enforcement Board', acronym: 'PLEB', email: '' },
-  { id: 'off_33', name: 'Sangguniang Bayan', acronym: 'SB', email: 'sb@malungon.gov.ph' }
+  { id: 'off_33', name: 'Sangguniang Bayan', acronym: 'SB', email: 'sb@malungon.gov.ph' },
+  { id: 'off_34', name: 'Sangguniang Kabataan', acronym: 'SK', email: '' },
+  { id: 'off_35', name: 'Mayor\'s Office - Tourism Section', acronym: 'Tourism', email: '' },
+  { id: 'off_36', name: 'Vice Mayor\'s Office', acronym: 'VM', email: '' }
 ];
 
 export function addOffice(name: string) {
@@ -265,3 +268,4 @@ export function updateAsset(id: string, updates: Partial<Omit<Asset, 'id'>>) {
     a.id === id ? { ...a, ...updates } : a
   );
 }
+
