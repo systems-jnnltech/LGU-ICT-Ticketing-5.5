@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, Ticket, Asset, Office, mockCategories, mockTickets, mockAssets, mockOffices, mockUsers } from './mockData';
 import { useAuth } from './AuthContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import { mapAssetFromDB, mapAssetToDB, mapTicketFromDB, mapTicketToDB, mapUserFromDB, mapOfficeFromDB, sanitizeDepartmentId } from '../lib/mappers';
+import { mapAssetFromDB, mapAssetToDB, mapTicketFromDB, mapTicketToDB, mapUserFromDB, mapOfficeFromDB, sanitizeDepartmentId, findOfficeForAsset } from '../lib/mappers';
 import { toast } from 'sonner';
 
 interface AppContextType {
@@ -78,10 +78,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         supabase.from('profiles').select('*')
       ]);
 
-      if (ticketsRes.data) setTickets(ticketsRes.data.map(mapTicketFromDB));
-      if (assetsRes.data) setAssets(assetsRes.data.map(mapAssetFromDB));
+      let currentOffices = officesRes.data && officesRes.data.length > 0 ? officesRes.data.map(mapOfficeFromDB) : mockOffices;
+
       if (officesRes.data && officesRes.data.length > 0) {
-        setOffices(officesRes.data.map(mapOfficeFromDB));
+        setOffices(currentOffices);
       } else {
         try {
           const officesToInsert = mockOffices.map(o => ({
@@ -91,12 +91,40 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           }));
           const { data: inserted } = await supabase.from('departments').insert(officesToInsert).select();
           if (inserted && inserted.length > 0) {
-            setOffices(inserted.map(mapOfficeFromDB));
+            currentOffices = inserted.map(mapOfficeFromDB);
+            setOffices(currentOffices);
           }
         } catch (e) {
           console.warn('Auto-seed departments note:', e);
         }
       }
+
+      if (ticketsRes.data) setTickets(ticketsRes.data.map(mapTicketFromDB));
+
+      if (assetsRes.data) {
+        const rawAssets = assetsRes.data.map(mapAssetFromDB);
+        const enrichedAssets = rawAssets.map(ast => {
+          const hasDirectMatch = currentOffices.some(o => o.id === ast.officeId);
+          if (!hasDirectMatch) {
+            const matched = findOfficeForAsset(ast, currentOffices);
+            if (matched) {
+              if (isSupabaseConfigured && ast.id) {
+                supabase.from('assets').update({ department_id: matched.id }).eq('id', ast.id).then();
+              }
+              return { ...ast, officeId: matched.id };
+            }
+          }
+          return ast;
+        });
+        setAssets(enrichedAssets);
+      } else {
+        const enrichedMock = mockAssets.map(ast => {
+          const matched = findOfficeForAsset(ast, currentOffices);
+          return matched ? { ...ast, officeId: matched.id } : ast;
+        });
+        setAssets(enrichedMock);
+      }
+
       if (usersRes.data) setUsers(usersRes.data.map(mapUserFromDB));
     } catch (error) {
       console.error('Error fetching data:', error);
