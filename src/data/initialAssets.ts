@@ -1422,7 +1422,7 @@ export function convertRawToAsset(raw: ImportedAssetRaw, officesList: { id: stri
     matchedOffice = officesList.find(o => o.name.toLowerCase().includes(raw.officeAcronym!.toLowerCase()));
   }
 
-  const officeId = matchedOffice ? matchedOffice.id : (officesList[0]?.id || 'off_6');
+  const officeId = matchedOffice ? matchedOffice.id : (officesList[0]?.id || '');
 
   // Condition mapping
   let cond: any = 'Good';
