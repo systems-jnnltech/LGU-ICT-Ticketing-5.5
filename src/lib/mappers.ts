@@ -71,10 +71,10 @@ export function findOfficeForAsset(asset: any, offices: { id: string; name: stri
 
 export const mapAssetFromDB = (dbAsset: any) => ({
   id: dbAsset.id,
-  assetCode: dbAsset.property_number || dbAsset.id,
+  assetCode: dbAsset.asset_code || dbAsset.property_number || dbAsset.id,
   officeId: dbAsset.department_id,
   equipmentType: dbAsset.equipment_type,
-  propertyNumber: dbAsset.property_number || dbAsset.id,
+  propertyNumber: dbAsset.property_number || dbAsset.asset_code || dbAsset.id,
   inventoryNumber: dbAsset.inventory_number,
   brand: dbAsset.brand,
   model: dbAsset.model,
@@ -107,7 +107,8 @@ export const mapAssetFromDB = (dbAsset: any) => ({
 export const mapAssetToDB = (asset: any) => ({
   department_id: sanitizeDepartmentId(asset.officeId),
   equipment_type: asset.equipmentType,
-  property_number: asset.assetCode || asset.propertyNumber || null,
+  asset_code: asset.assetCode || asset.propertyNumber || `ICT-AST-${Math.random().toString(36).substring(2, 8)}`,
+  property_number: asset.propertyNumber || asset.assetCode || null,
   inventory_number: asset.inventoryNumber || null,
   brand: asset.brand || null,
   model: asset.model || null,
