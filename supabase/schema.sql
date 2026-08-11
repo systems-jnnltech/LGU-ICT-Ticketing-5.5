@@ -11,6 +11,8 @@ CREATE TYPE asset_status AS ENUM ('Operational', 'Under Maintenance', 'Non-Opera
 CREATE TABLE offices (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     name TEXT NOT NULL,
+    acronym TEXT,
+    email TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
@@ -125,10 +127,43 @@ CREATE POLICY "Allow ICT/Admin or owner to update tickets" ON tickets FOR UPDATE
 CREATE POLICY "Allow users to comment on tickets" ON ticket_comments FOR INSERT TO authenticated WITH CHECK (true);
 
 -- 4. Initial Seed Data
-INSERT INTO offices (name) VALUES 
-('Municipal Accounting Office'),
-('Mayor''s Office'),
-('Human Resources');
+INSERT INTO offices (name, acronym, email) VALUES 
+('Mayor''s Office Administrative Section', 'MO-Admin', 'mo_admin@malungon.gov.ph'),
+('Bureau of Fire Protection', 'BFP', 'fire@malungon.gov.ph'),
+('Bids and Awards Committee', 'BAC', 'bac@malungon.gov.ph'),
+('Bureau of Internal Revenue', 'BIR', 'bir@malungon.gov.ph'),
+('Civil Security Unit', 'CSU', 'csu@malungon.gov.ph'),
+('General Services Office', 'GSO', 'gso@malungon.gov.ph'),
+('Local Disaster Risk Reduction and Management Office', 'LDRRMO', 'ldrrmo@malungon.gov.ph'),
+('Liga ng mga Barangay', 'LB', 'liga@malungon.gov.ph'),
+('Local Youth Development Office', 'LYDO', 'lydo@malungon.gov.ph'),
+('Municipal Economic Enterprise Development Office', 'MEEDO', 'market@malungon.gov.ph'),
+('Municipal Environment and Natural Resources Office', 'MENRO', 'menro@malungon.gov.ph'),
+('Municipal Local Government Operations Office', 'MLGOO', 'mlgoo@malungon.gov.ph'),
+('Municipal Social Welfare and Development Office', 'MSWDO', 'mswdo@malungon.gov.ph'),
+('Municipal Accounting Office', 'ACCOUNTING', 'accounting@malungon.gov.ph'),
+('Office of the Municipal Agriculturist', 'OMAG', 'agri@malungon.gov.ph'),
+('Municipal Assessor''s Office', 'MASSO', 'assessor@malungon.gov.ph'),
+('Municipal Budget Office', 'MBO', 'budget@malungon.gov.ph'),
+('Municipal Civil Registrar Office', 'MCR', 'registrar@malungon.gov.ph'),
+('Municipal Cooperative Development Office', 'MCDO', 'coop@malungon.gov.ph'),
+('Municipal Engineering Office', 'MEO', 'engineer@malungon.gov.ph'),
+('Municipal Health Office', 'MHO', 'health@malungon.gov.ph'),
+('Municipal Information Office', 'MIO', 'info@malungon.gov.ph'),
+('Municipal Treasurer''s Office', 'MTO', 'treasurer@malungon.gov.ph'),
+('Municipal Tribal Council', 'MTC', 'tribal@malungon.gov.ph'),
+('Municipal Nutrition Office', 'MNO', 'nutrition@malungon.gov.ph'),
+('Office of the Mayor', 'OM', 'mayor@malungon.gov.ph'),
+('Office of the Vice Mayor', 'OVM', 'vicemayor@malungon.gov.ph'),
+('Business Permits and Licensing Office', 'BPLO', 'permits@malungon.gov.ph'),
+('Human Resource Management Office', 'HRMO', 'hr@malungon.gov.ph'),
+('Public Employment Service Office', 'PESO', 'peso@malungon.gov.ph'),
+('Municipal Planning and Development Office', 'MPDO', 'planning@malungon.gov.ph'),
+('Philippine National Police', 'PNP', 'pnp@malungon.gov.ph'),
+('Sangguniang Bayan', 'SB', 'sb@malungon.gov.ph'),
+('Municipal Tourism Office', 'MTO', 'tourism@malungon.gov.ph'),
+('Systems Administrator', 'SYSTEMS', 'systems@malungon.gov.ph'),
+('Web Administrator', 'WEBADMIN', 'webadmin@malungon.gov.ph');
 
 INSERT INTO categories (name) VALUES 
 ('Hardware'),

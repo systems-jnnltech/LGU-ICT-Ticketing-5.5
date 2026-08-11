@@ -3,10 +3,12 @@ import { Building2, Plus, Edit2, Mail, Check, X, Shield, User as UserIcon } from
 import { toast } from 'sonner';
 import { useAppContext } from '../store/AppContext';
 import { Role } from '../store/AuthContext';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 export function AdminUsers() {
-  const { offices } = useAppContext();
+  const { offices, users, updateUserRole } = useAppContext();
   const [isInviting, setIsInviting] = useState(false);
+  const [editingUser, setEditingUser] = useState<any | null>(null);
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -17,21 +19,35 @@ export function AdminUsers() {
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.fullName || !formData.email) return;
+    if (!formData.email) return;
 
-    // In a real application, this would call a secure backend endpoint 
-    // that uses the Supabase Admin API to invite the user:
-    // await supabase.auth.admin.inviteUserByEmail(formData.email, { data: { ...formData } })
-    
-    toast.success(`Invitation sent to ${formData.email} successfully.`);
-    setIsInviting(false);
-    setFormData({
-      fullName: '',
-      email: '',
-      role: 'ict_support',
-      departmentId: '',
-      status: 'active'
-    });
+    try {
+      const { error } = await supabase.from('user_invitations').insert({
+        email: formData.email,
+        role: formData.role,
+        department_id: formData.departmentId || null
+      });
+
+      if (error) {
+        if (error.code === '23505') {
+          toast.error('An invitation for this email already exists.');
+        } else {
+          throw error;
+        }
+      } else {
+        toast.success(`User pre-assigned successfully! Have them log in using Continue with Google.`);
+        setIsInviting(false);
+        setFormData({
+          fullName: '',
+          email: '',
+          role: 'ict_support',
+          departmentId: '',
+          status: 'active'
+        });
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to create invitation');
+    }
   };
 
   return (
@@ -47,7 +63,7 @@ export function AdminUsers() {
             className="flex items-center space-x-2 px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90 transition-colors text-sm font-bold shadow-sm"
           >
             <Plus className="w-4 h-4" />
-            <span>Invite User</span>
+            <span>Pre-assign Role</span>
           </button>
         )}
       </div>
@@ -60,8 +76,8 @@ export function AdminUsers() {
                 <Mail className="w-5 h-5 text-accent" />
               </div>
               <div>
-                <h3 className="font-bold text-ink text-lg">Send Invitation</h3>
-                <p className="text-sm text-ink-muted">Invite a new ICT Support or System Admin to the platform.</p>
+                <h3 className="font-bold text-ink text-lg">Pre-assign Role</h3>
+                <p className="text-sm text-ink-muted">Assign a role before the user logs in for the first time.</p>
               </div>
             </div>
             <button 
@@ -156,14 +172,91 @@ export function AdminUsers() {
                 className="px-5 py-2 bg-accent text-white rounded-lg text-sm font-bold hover:bg-accent/90 transition-colors shadow-sm flex items-center space-x-2"
               >
                 <Mail className="w-4 h-4" />
-                <span>Send Invitation</span>
+                <span>Assign Role</span>
               </button>
             </div>
           </form>
         </div>
       )}
 
-      {/* Mock Table of users to visualize */}
+      {editingUser && (
+        <div className="bg-surface border border-border p-6 rounded-xl shadow-sm">
+          <div className="flex items-center justify-between mb-6 border-b border-border pb-4">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
+                <Edit2 className="w-5 h-5 text-accent" />
+              </div>
+              <div>
+                <h3 className="font-bold text-ink text-lg">Edit User Role</h3>
+                <p className="text-sm text-ink-muted">Update role and department for {editingUser.name}</p>
+              </div>
+            </div>
+            <button 
+              onClick={() => setEditingUser(null)}
+              className="p-2 text-ink-muted hover:bg-bg rounded-lg transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          <form onSubmit={async (e) => {
+            e.preventDefault();
+            await updateUserRole(editingUser.id, editingUser.rawRole, editingUser.departmentId);
+            setEditingUser(null);
+          }} className="space-y-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div>
+                <label className="block text-sm font-bold text-ink mb-1.5">Role</label>
+                <div className="relative">
+                  <Shield className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-muted pointer-events-none" />
+                  <select
+                    value={editingUser.rawRole}
+                    onChange={(e) => setEditingUser({...editingUser, rawRole: e.target.value})}
+                    className="w-full bg-bg border border-border rounded-lg pl-9 pr-4 py-2 text-sm outline-none focus:border-accent appearance-none"
+                  >
+                    <option value="employee">Department User</option>
+                    <option value="ict_support">ICT Support</option>
+                    <option value="system_admin">System Admin</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-bold text-ink mb-1.5">Department</label>
+                <div className="relative">
+                  <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-muted pointer-events-none" />
+                  <select
+                    value={editingUser.departmentId || ''}
+                    onChange={(e) => setEditingUser({...editingUser, departmentId: e.target.value || null})}
+                    className="w-full bg-bg border border-border rounded-lg pl-9 pr-4 py-2 text-sm outline-none focus:border-accent appearance-none"
+                  >
+                    <option value="">No Department</option>
+                    {offices.map(office => (
+                      <option key={office.id} value={office.id}>{office.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end pt-4 border-t border-border mt-6">
+              <button
+                type="button"
+                onClick={() => setEditingUser(null)}
+                className="px-4 py-2 text-sm font-bold text-ink-muted hover:text-ink mr-2"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-5 py-2 bg-accent text-white rounded-lg text-sm font-bold hover:bg-accent/90 transition-colors shadow-sm flex items-center space-x-2"
+              >
+                <Check className="w-4 h-4" />
+                <span>Save Changes</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
       <div className="bg-surface border border-border rounded-xl shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-border bg-bg/50">
           <h3 className="font-bold text-ink">Registered Accounts</h3>
@@ -180,39 +273,52 @@ export function AdminUsers() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {/* This is mocked for UI display purposes since we don't have the user fetch logic */}
-              <tr className="hover:bg-bg/50 transition-colors group">
-                <td className="px-6 py-4">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 rounded-full bg-accent/10 text-accent flex items-center justify-center font-bold text-xs">
-                      SM
-                    </div>
-                    <div>
-                      <div className="font-bold text-ink">System Admin</div>
-                      <div className="text-xs text-ink-muted">admin@malungon.gov.ph</div>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <span className="px-2.5 py-1 bg-accent/10 text-accent text-[10px] font-bold uppercase tracking-wider rounded-md">
-                    System Admin
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-ink-muted text-xs">
-                  ICT Office
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex items-center space-x-1.5">
-                    <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
-                    <span className="text-xs font-bold text-ink">Active</span>
-                  </div>
-                </td>
-                <td className="px-6 py-4 text-right">
-                  <button className="text-ink-muted hover:text-accent transition-colors p-1 opacity-0 group-hover:opacity-100">
-                    <Edit2 className="w-4 h-4" />
-                  </button>
-                </td>
-              </tr>
+              {users.map(user => {
+                const initials = user.name ? user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'U';
+                const officeName = offices.find(o => o.id === user.officeId)?.name || 'N/A';
+                
+                return (
+                  <tr key={user.id} className="hover:bg-bg/50 transition-colors group">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-8 h-8 rounded-full bg-accent/10 text-accent flex items-center justify-center font-bold text-xs">
+                          {initials}
+                        </div>
+                        <div>
+                          <div className="font-bold text-ink">{user.name}</div>
+                          <div className="text-xs text-ink-muted">{user.email}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="px-2.5 py-1 bg-accent/10 text-accent text-[10px] font-bold uppercase tracking-wider rounded-md">
+                        {user.role}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-ink-muted text-xs">
+                      {officeName}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center space-x-1.5">
+                        <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                        <span className="text-xs font-bold text-ink">Active</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      {/* Can implement edit user role modal here in future */}
+                      <button 
+                        onClick={() => {
+                          const rawRole = user.role === 'Admin' ? 'system_admin' : (user.role === 'ICT Support' ? 'ict_support' : 'employee');
+                          setEditingUser({ ...user, rawRole, departmentId: user.officeId });
+                        }}
+                        className="text-ink-muted hover:text-accent transition-colors p-1 opacity-0 group-hover:opacity-100"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

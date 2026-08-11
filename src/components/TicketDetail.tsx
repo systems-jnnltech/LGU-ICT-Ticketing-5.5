@@ -2,16 +2,55 @@ import React, { useState } from 'react';
 import { useAppContext } from '../store/AppContext';
 import { ArrowLeft, Clock, User, Monitor, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { format } from 'date-fns';
+import { getTicketSLA } from '../utils/sla';
 import { Toast, ConfirmModal } from '../lib/toast';
+import Swal from 'sweetalert2';
 
 export function TicketDetail({ ticketId, onBack }: { ticketId: string, onBack: () => void }) {
-  const { tickets, users, assets, categories, currentUser, changeTicketStatus, addComment } = useAppContext();
+  const { tickets, users, assets, categories, currentUser, changeTicketStatus, updateTicketPriority, addComment } = useAppContext();
   const ticket = tickets.find(t => t.id === ticketId);
   
-  const [selectedAssignee, setSelectedAssignee] = useState('');
+  const [selectedAssignee, setSelectedAssignee] = useState(ticket.assignedToId || '');
   const [newCommentText, setNewCommentText] = useState('');
-  const [recommendationText, setRecommendationText] = useState(ticket.ictRecommendation || '');
+  const [recommendationText, setRecommendationText] = useState('');
   const [isEditingRecommendation, setIsEditingRecommendation] = useState(false);
+  const [showReferralModal, setShowReferralModal] = useState(false);
+  const [referralData, setReferralData] = useState({
+    reason: 'Hardware repair requires specialized technician',
+    serviceProvider: '',
+    contactPerson: '',
+    contactNo: '',
+    dateReferred: '',
+    referenceNumber: '',
+    expectedReturn: '',
+    notes: ''
+  });
+
+  const handleReferralSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    changeTicketStatus(ticket.id, 'REFERRED', ticket.assignedToId);
+    
+    // Add referral details as a comment for now
+    const commentText = `Referred to External Technician
+Reason: ${referralData.reason}
+Service Provider: ${referralData.serviceProvider}
+Contact Person: ${referralData.contactPerson}
+Contact No.: ${referralData.contactNo}
+Date Referred: ${referralData.dateReferred}
+Reference / Job Order No.: ${referralData.referenceNumber}
+Expected Return: ${referralData.expectedReturn}
+Notes: ${referralData.notes}`;
+    
+    addComment(ticket.id, commentText);
+    setShowReferralModal(false);
+    Toast.fire({ icon: 'success', title: 'Ticket Referred to External Technician' });
+  };
+  
+  React.useEffect(() => {
+    if (ticket && ticket.assignedToId) {
+      setSelectedAssignee(ticket.assignedToId);
+    }
+  }, [ticket?.assignedToId]);
   
   const { updateRecommendation } = useAppContext();
 
@@ -64,365 +103,542 @@ export function TicketDetail({ ticketId, onBack }: { ticketId: string, onBack: (
   };
 
   const handleUpdateRecommendation = () => {
-    updateRecommendation(ticket.id, recommendationText.trim());
+    if (!recommendationText.trim()) return;
+    const existing = ticket.ictRecommendation || '';
+    const occurrences = (existing.match(/Taken \d+:/g) || []).length;
+    const nextNum = occurrences + 1;
+    
+    const timestampStr = format(new Date(), 'MMM d, yyyy h:mm a');
+    const roleName = currentUser?.role === 'Admin' ? 'ICT Head' : 'ICT Support';
+    const header = `Taken ${nextNum}: ${timestampStr} by: ${roleName} (${currentUser?.name || 'Unknown'})`;
+    const newEntry = `${header}\n${recommendationText.trim()}`;
+    const combined = existing ? `${existing}\n\n${newEntry}` : newEntry;
+
+    updateRecommendation(ticket.id, combined);
     setIsEditingRecommendation(false);
+    setRecommendationText('');
     Toast.fire({
       icon: 'success',
-      title: 'Recommendation saved'
+      title: 'Recommendation added'
     });
   };
 
+  const inProgressCountHistory = ticket.statusHistory?.filter(h => h.status === 'IN PROGRESS').length || 0;
+  const inProgressCountComments = ticket.comments?.filter(c => c.text === 'System: Status changed to IN PROGRESS').length || 0;
+  const inProgressCount = Math.max(inProgressCountHistory, inProgressCountComments, 1);
+  const occurrences = (ticket.ictRecommendation || '').match(/Taken \d+:/g)?.length || 0;
+  const maxIctRecommendations = inProgressCount;
+  const canAddRecommendationIct = currentUser?.role === 'ICT Support' && ticket.assignedToId === currentUser.id && ticket.status === 'IN PROGRESS' && occurrences < maxIctRecommendations;
+  const canAddRecommendationAdmin = currentUser?.role === 'Admin' && ['ESCALATED', 'REFERRED'].includes(ticket.status) && occurrences < 3;
+
   return (
-    <div className="space-y-6 max-w-4xl mx-auto pb-12">
-      <button onClick={onBack} className="flex items-center space-x-2 text-ink-muted hover:text-ink transition-colors">
+    <div className="space-y-6 max-w-5xl mx-auto pb-12">
+      <button onClick={onBack} className="flex items-center space-x-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-slate-100 transition-colors mb-4">
         <ArrowLeft className="w-4 h-4" />
-        <span className="text-xs font-bold uppercase tracking-wider">Back to Tickets</span>
+        <span className="text-sm font-semibold">Back to Tickets</span>
       </button>
 
-      {/* Header */}
-      <div className="bg-surface p-6 rounded-xl shadow-sm border border-border">
-        <div className="flex items-center space-x-3 mb-3">
-          <h1 className="text-xl font-bold text-ink">{ticket.ticketNumber}</h1>
-          <span className="px-2 py-0.5 bg-white/5 text-ink-muted font-bold rounded text-[10px] uppercase">
-            {ticket.status}
-          </span>
-          <span className="px-2 py-0.5 bg-red-50 text-red-600 font-bold rounded text-[10px] border border-red-100 uppercase">
-            {ticket.priority} Priority
-          </span>
-        </div>
-        <h2 className="text-sm font-bold text-ink-muted">{ticket.subject}</h2>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-           <div className="space-y-4">
-              <div className="flex items-start space-x-3">
-                 <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center shrink-0">
-                    <User className="w-4 h-4 text-ink-muted" />
-                 </div>
-                 <div>
-                    <div className="text-[10px] font-bold text-ink-muted uppercase tracking-wider">Requester</div>
-                    <div className="text-sm font-bold text-ink">{requester?.name}</div>
-                    <div className="text-xs text-ink-muted">{requester?.email}</div>
-                 </div>
-              </div>
-              <div className="flex items-start space-x-3">
-                 <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center shrink-0">
-                    <Clock className="w-4 h-4 text-ink-muted" />
-                 </div>
-                 <div>
-                    <div className="text-[10px] font-bold text-ink-muted uppercase tracking-wider">Submitted</div>
-                    <div className="text-sm font-bold text-ink">{format(new Date(ticket.createdAt), 'PP')}</div>
-                    <div className="text-xs text-ink-muted">{format(new Date(ticket.createdAt), 'p')}</div>
-                 </div>
-              </div>
-           </div>
-
-           {asset && (
-             <div className="p-4 bg-bg rounded-xl border border-border flex items-start space-x-3">
-               <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center shrink-0">
-                 <Monitor className="w-4 h-4 text-accent" />
-               </div>
-               <div>
-                 <div className="text-[10px] font-bold text-ink-muted uppercase tracking-wider mb-1">Affected Asset</div>
-                 <div className="text-sm font-bold text-ink">{asset.equipmentType} - {asset.brand} {asset.model}</div>
-                 <div className="text-xs font-medium text-ink-muted mt-0.5">Property No: {asset.propertyNumber}</div>
-               </div>
-             </div>
-           )}
-        </div>
-
-        {/* Horizontal Ticket Progress */}
-        <div className="mt-8 pt-8 border-t border-border">
-          <h3 className="text-xs font-bold text-ink uppercase tracking-wider mb-6 text-center">Ticket Progress</h3>
-          <div className="flex justify-between relative max-w-3xl mx-auto">
-            {[
-              { label: 'Submitted', color: 'bg-emerald-500', ring: 'ring-emerald-100' },
-              { label: 'Received', color: 'bg-amber-400', ring: 'ring-amber-100' },
-              { label: 'Assigned', color: 'bg-blue-500', ring: 'ring-blue-100' },
-              { label: 'In Progress', color: 'bg-orange-500', ring: 'ring-orange-100' },
-              { label: 'Testing', color: 'bg-purple-500', ring: 'ring-purple-100' },
-              { label: 'Resolved', color: 'bg-emerald-500', ring: 'ring-emerald-100' },
-              { label: 'Closed', color: 'bg-white/10', ring: 'ring-border' }
-            ].map((step, index) => {
-              const getTimelineIndex = (status: string) => {
-                switch (status) {
-                  case 'NEW': return 1;
-                  case 'ASSIGNED': return 2;
-                  case 'IN PROGRESS': return 3;
-                  case 'PENDING': return 4;
-                  case 'RESOLVED': return 5;
-                  case 'CLOSED': return 6;
-                  default: return 1;
+      {/* Top Summary Card */}
+      <div className="bg-white dark:bg-[#18181b] p-6 md:p-8 rounded-[16px] shadow-sm border border-slate-200 dark:border-white/10">
+          <div className="flex flex-wrap items-center gap-3 mb-4">
+              <span className="text-lg font-semibold text-slate-500 dark:text-slate-400">{ticket.ticketNumber}</span>
+              <span className={`px-2.5 py-1 rounded-md text-xs font-semibold uppercase tracking-wider ${ticket.status === 'CLOSED' ? 'bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-400' : ticket.status === 'RESOLVED' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' : 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400'}`}>
+                  {ticket.status}
+              </span>
+              <span className={`px-2.5 py-1 rounded-md text-xs font-semibold uppercase tracking-wider ${ticket.priority === 'Critical' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' : ticket.priority === 'High' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400' : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'}`}>
+                  {ticket.priority} Priority
+              </span>
+              {(() => {
+                const sla = getTicketSLA(ticket);
+                let bg = 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400';
+                if (sla.isClosed) {
+                  bg = sla.isBreached ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' : bg;
+                } else {
+                  if (sla.isBreached) bg = 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400';
+                  else if (sla.remainingMin < 60) bg = 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400';
                 }
-              };
-              
-              const currentIndex = getTimelineIndex(ticket.status);
-              const isCompleted = index < currentIndex;
-              const isCurrent = index === currentIndex;
-              const isLast = index === 6;
-
-              let dotClass = 'bg-white/5';
-              let textClass = 'text-ink-muted font-medium';
-              let lineClass = 'bg-white/5';
-
-              if (isCompleted) {
-                dotClass = step.color;
-                textClass = 'text-ink font-bold';
-                lineClass = step.color;
-              } else if (isCurrent) {
-                dotClass = `${step.color} ring-4 ${step.ring}`;
-                textClass = 'text-ink font-bold';
-              }
-
-              return (
-                <div key={index} className="flex flex-col items-center relative flex-1">
-                  {!isLast && (
-                    <div className={`absolute left-[50%] right-[-50%] top-2.5 h-0.5 ${lineClass} opacity-30`} />
-                  )}
-                  <div className={`relative z-10 w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${dotClass}`}>
-                    {isCompleted && (
-                      <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                      </svg>
-                    )}
-                  </div>
-                  <span className={`text-[10px] text-center mt-3 ${textClass} max-w-[60px] leading-tight`}>{step.label}</span>
-                  {(isCompleted || isCurrent) && (() => {
-                    let timestampStr = null;
-                    if (index === 0) {
-                      timestampStr = ticket.createdAt;
-                    } else {
-                      const statusMap: Record<number, string> = {
-                        1: 'NEW', // Or maybe we map 'NEW' to index 0, and 'ASSIGNED' to 2. Let's see. 
-                        2: 'ASSIGNED',
-                        3: 'IN PROGRESS',
-                        4: 'PENDING',
-                        5: 'RESOLVED',
-                        6: 'CLOSED'
-                      };
-                      const s = statusMap[index];
-                      const historyItem = ticket.statusHistory?.find(h => h.status === s);
-                      if (historyItem) {
-                        timestampStr = historyItem.timestamp;
-                      } else if (isCurrent) {
-                        timestampStr = ticket.updatedAt;
-                      }
-                    }
-                    if (timestampStr) {
-                      return (
-                        <span className="text-[8px] text-ink-muted mt-1 max-w-[70px] text-center leading-tight">
-                          {format(new Date(timestampStr), 'MMM d, h:mm a')}
-                        </span>
-                      );
-                    }
-                    return null;
-                  })()}
-                </div>
-              );
-            })}
+                return (
+                  <span className={`flex items-center space-x-1.5 px-2.5 py-1 rounded-md text-xs font-semibold tracking-wider font-mono ${bg}`}>
+                    <Clock className="w-3.5 h-3.5" />
+                    <span>{sla.label}</span>
+                  </span>
+                );
+              })()}
           </div>
-        </div>
+          <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 mb-8">
+              {asset ? `${asset.equipmentType} - ${asset.brand} ${asset.model} (${ticket.subject})` : ticket.subject}
+          </h1>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+              <div className="space-y-6">
+                  <div className="flex items-start space-x-4">
+                      <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-white/10 flex items-center justify-center shrink-0">
+                          <User className="w-5 h-5 text-slate-500 dark:text-slate-400" />
+                      </div>
+                      <div>
+                          <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 uppercase tracking-wider">Requester</div>
+                          <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{requester?.name}</div>
+                          <div className="text-sm text-slate-500 dark:text-slate-400">{requester?.email}</div>
+                      </div>
+                  </div>
+                  <div className="flex items-start space-x-4">
+                      <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-white/10 flex items-center justify-center shrink-0">
+                          <Clock className="w-5 h-5 text-slate-500 dark:text-slate-400" />
+                      </div>
+                      <div>
+                          <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 uppercase tracking-wider">Submitted & Updated</div>
+                          <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{format(new Date(ticket.createdAt), 'MMM d, yyyy h:mm a')}</div>
+                          <div className="text-sm text-slate-500 dark:text-slate-400">Updated: {format(new Date(ticket.updatedAt), 'MMM d, yyyy h:mm a')}</div>
+                      </div>
+                  </div>
+              </div>
+              
+              <div className="space-y-6">
+                  <div className="flex items-start space-x-4">
+                      <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-white/10 flex items-center justify-center shrink-0">
+                          <User className="w-5 h-5 text-slate-500 dark:text-slate-400" />
+                      </div>
+                      <div>
+                          <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 uppercase tracking-wider">Assigned Technician</div>
+                          {assignee ? (
+                              <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{assignee.name}</div>
+                          ) : (
+                              <div className="text-sm font-medium text-slate-400 dark:text-slate-500 italic">Unassigned</div>
+                          )}
+                      </div>
+                  </div>
+                  <div className="flex items-start space-x-4">
+                      <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-white/10 flex items-center justify-center shrink-0">
+                          <Monitor className="w-5 h-5 text-slate-500 dark:text-slate-400" />
+                      </div>
+                      <div>
+                          <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 uppercase tracking-wider">Category & Asset</div>
+                          <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{category?.name || 'General'}</div>
+                          {asset && (
+                               <div className="text-sm text-slate-500 dark:text-slate-400">{asset.equipmentType} - {asset.brand} {asset.model}</div>
+                          )}
+                      </div>
+                  </div>
+              </div>
+          </div>
+
+          {/* Progress Tracker */}
+          <div className="mb-10 pt-8 border-t border-slate-100 dark:border-white/10">
+              <h3 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-8 text-center">Ticket Progress</h3>
+              <div className="flex justify-between relative max-w-4xl mx-auto px-4">
+                  {[
+                    { label: 'Submitted', key: 'NEW' },
+                    { label: 'Received', key: 'RECEIVED' },
+                    { label: 'Assigned', key: 'ASSIGNED' },
+                    { label: 'In Progress', key: 'IN PROGRESS' },
+                    { label: 'Resolved', key: 'RESOLVED' },
+                    { label: 'Closed', key: 'CLOSED' }
+                  ].map((step, index) => {
+                    const getTimelineIndex = (status: string) => {
+                      switch (status) {
+                        case 'NEW': return 1;
+                        case 'ASSIGNED': return 2;
+                        case 'IN PROGRESS': return 3;
+                        case 'PENDING': return 3;
+                        case 'ESCALATED': return 3;
+                        case 'REFERRED': return 3;
+                        case 'RESOLVED': return 4;
+                        case 'CLOSED': return 5;
+                        default: return 1;
+                      }
+                    };
+                    
+                    const currentIndex = getTimelineIndex(ticket.status);
+                    const isCompleted = index < currentIndex;
+                    const isCurrent = index === currentIndex;
+                    const isLast = index === 5;
+
+                    return (
+                      <div key={index} className="flex flex-col items-center relative flex-1">
+                        {!isLast && (
+                          <div className={`absolute left-[50%] right-[-50%] top-[14px] h-[3px] rounded-full transition-colors duration-500 ${isCompleted ? 'bg-emerald-500' : 'bg-slate-100 dark:bg-white/10'}`} />
+                        )}
+                        <div className={`relative z-10 w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-all duration-500 ${
+                            isCompleted 
+                              ? 'bg-emerald-500 shadow-sm shadow-emerald-200 border-2 border-emerald-500' 
+                              : isCurrent 
+                                ? 'bg-white dark:bg-[#18181b] ring-[6px] ring-orange-50 dark:ring-[#18181b] border-[3px] border-orange-500 shadow-lg shadow-orange-100/50 dark:shadow-orange-900/20' 
+                                : 'bg-white dark:bg-[#18181b] border-2 border-slate-200 dark:border-white/10'
+                        }`}>
+                          {isCompleted && (
+                            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3.5}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                          {isCurrent && (
+                            <div className="w-2.5 h-2.5 bg-orange-500 rounded-full"></div>
+                          )}
+                        </div>
+                        <span className={`text-xs mt-4 text-center transition-colors duration-300 ${isCompleted ? 'text-slate-800 dark:text-slate-200 font-bold' : isCurrent ? 'text-orange-600 font-bold' : 'text-slate-400 dark:text-slate-500 font-medium'}`}>{step.label}</span>
+                        
+                        {(isCompleted || isCurrent) && (() => {
+                          let timestampStr = null;
+                          if (index === 0 || index === 1) {
+                              timestampStr = ticket.createdAt;
+                          } else {
+                              const dbStatus = step.key;
+                              if (dbStatus) {
+                                  const sysComment = ticket.comments?.find((c: any) => c.text === `System: Status changed to ${dbStatus}`);
+                                  if (sysComment) timestampStr = sysComment.createdAt;
+                                  else if (ticket.statusHistory) {
+                                      const historyItem = ticket.statusHistory.find((h: any) => h.status === dbStatus);
+                                      if (historyItem) timestampStr = historyItem.timestamp;
+                                  }
+                              }
+                              if (!timestampStr && isCurrent) timestampStr = ticket.updatedAt;
+                          }
+                          if (timestampStr) {
+                              return (
+                                  <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 max-w-[80px] text-center font-medium">
+                                      {format(new Date(timestampStr), 'MMM d, h:mm a')}
+                                  </span>
+                              );
+                          }
+                          return null;
+                        })()}
+                      </div>
+                    );
+                  })}
+              </div>
+          </div>
+
+          {/* Actions Section */}
+          <div className="pt-6 border-t border-slate-100 dark:border-white/10 flex flex-wrap gap-4 items-center">
+              {ticket.status === 'CLOSED' ? (
+                  <div className="px-5 py-2.5 bg-slate-50 dark:bg-white/5 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-white/10 rounded-lg text-sm font-semibold flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4"/> Ticket Closed
+                  </div>
+              ) : (
+                  <>
+                      {/* Admin Actions */}
+                      {currentUser?.role === 'Admin' && (
+                          <div className="flex flex-col gap-3">
+                              <div className="flex items-center gap-3">
+                                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 w-32">Set Priority:</label>
+                                  <select 
+                                      className="px-4 py-2.5 bg-white dark:bg-[#18181b] border border-slate-300 dark:border-white/20 rounded-lg text-sm font-medium outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 min-w-[200px]"
+                                      value={ticket.priority}
+                                      onChange={async (e) => {
+                                        const newPriority = e.target.value;
+                                        const result = await ConfirmModal.fire({
+                                          text: `Change priority to ${newPriority}?`
+                                        });
+                                        if (result.isConfirmed) {
+                                          updateTicketPriority(ticket.id, newPriority);
+                                          Toast.fire({ icon: 'success', title: 'Priority updated' });
+                                        }
+                                      }}
+                                  >
+                                      <option value="Critical">Critical</option>
+                                      <option value="High">High</option>
+                                      <option value="Medium">Medium</option>
+                                      <option value="Low">Low</option>
+                                  </select>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 w-32">Assign To:</label>
+                                  <select 
+                                      className="px-4 py-2.5 bg-white dark:bg-[#18181b] border border-slate-300 dark:border-white/20 rounded-lg text-sm font-medium outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 min-w-[200px]"
+                                      value={selectedAssignee}
+                                      onChange={(e) => setSelectedAssignee(e.target.value)}
+                                  >
+                                      <option value="">Assign Technician...</option>
+                                      {ictStaff.map(staff => {
+                                          const active = tickets.filter(t => t.assignedToId === staff.id && ['ASSIGNED', 'IN PROGRESS', 'PENDING'].includes(t.status)).length;
+                                          return <option key={staff.id} value={staff.id}>{staff.name} ({active} active)</option>;
+                                      })}
+                                  </select>
+                                  <button 
+                                      onClick={handleAssign}
+                                      disabled={!selectedAssignee || selectedAssignee === ticket.assignedToId}
+                                      className="px-5 py-2.5 bg-slate-900 text-white text-sm font-semibold rounded-lg shadow-sm hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                  >
+                                      {selectedAssignee && selectedAssignee === ticket.assignedToId ? 'Assigned' : 'Assign'}
+                                  </button>
+                              </div>
+                              {['ESCALATED', 'REFERRED'].includes(ticket.status) && (
+                                  <div className="flex flex-wrap items-center gap-3 mt-2 pt-4 border-t border-slate-100 dark:border-white/10">
+                                      {ticket.status === 'ESCALATED' && (
+                                          <button 
+                                              onClick={() => setShowReferralModal(true)}
+                                              className="px-5 py-2.5 bg-purple-600 text-white rounded-lg text-sm font-semibold hover:bg-purple-700 shadow-sm transition-colors flex items-center gap-2"
+                                          >
+                                              Assess & Refer to External Technician
+                                          </button>
+                                      )}
+                                      <button 
+                                          onClick={() => handleStatusUpdate('RESOLVED')}
+                                          className="px-5 py-2.5 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700 shadow-sm transition-colors flex items-center gap-2"
+                                      >
+                                          <CheckCircle2 className="w-4 h-4" /> Mark As Repaired / Resolved
+                                      </button>
+                                  </div>
+                              )}
+                          </div>
+                      )}
+                      
+                                                                  {/* ICT Support Actions */}
+                      {currentUser?.role === 'ICT Support' && ticket.assignedToId === currentUser.id && (
+                          <div className="flex flex-wrap gap-3">
+                              {ticket.status === 'ASSIGNED' && (
+                                  <button onClick={() => handleStatusUpdate('IN PROGRESS')} className="px-5 py-2.5 bg-orange-600 text-white rounded-lg text-sm font-semibold hover:bg-orange-700 shadow-sm transition-colors">
+                                      Start Work
+                                  </button>
+                              )}
+                              {ticket.status === 'IN PROGRESS' && (
+                                  <button onClick={() => handleStatusUpdate('RESOLVED')} className="px-5 py-2.5 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700 shadow-sm transition-colors flex items-center gap-2">
+                                      <CheckCircle2 className="w-4 h-4"/> Mark as Repaired / Resolved
+                                  </button>
+                              )}
+                              {ticket.status === 'REFERRED' && (
+                                  <div className="flex items-center gap-3">
+                                      <button onClick={() => {
+                                          const referralComment = ticket.comments?.find(c => c.text.startsWith('Referred to External Technician'));
+                                          if (referralComment) {
+                                              Swal.fire({
+                                                  title: 'External Technician Details',
+                                                  html: `<div class="text-left text-sm whitespace-pre-wrap font-sans">\n${referralComment.text}\n</div>`,
+                                                  confirmButtonColor: '#9333ea',
+                                                  confirmButtonText: 'Close',
+                                              });
+                                          } else {
+                                              Toast.fire({ icon: 'info', title: 'No technician details found' });
+                                          }
+                                      }} className="px-5 py-2.5 bg-purple-600 text-white rounded-lg text-sm font-semibold hover:bg-purple-700 shadow-sm transition-colors">
+                                          View Technician Details
+                                      </button>
+                                      <button onClick={() => handleStatusUpdate('RESOLVED')} className="px-5 py-2.5 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700 shadow-sm transition-colors flex items-center gap-2">
+                                          <CheckCircle2 className="w-4 h-4"/> Mark as Repaired / Resolved
+                                      </button>
+                                  </div>
+                              )}
+                          </div>
+                      )}
+                      
+                      {/* Department User Actions */}
+                      {currentUser?.role === 'Department User' && (
+                          <div className="flex flex-wrap gap-3">
+                              {ticket.status === 'RESOLVED' && (
+                                  <>
+                                      <button onClick={() => handleStatusUpdate('CLOSED')} className="px-5 py-2.5 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700 shadow-sm transition-colors flex items-center gap-2">
+                                          <CheckCircle2 className="w-4 h-4"/> Confirm & Close Ticket
+                                      </button>
+                                      <button onClick={async () => {
+                                          const attempts = (ticket.ictRecommendation || '').match(/Taken \d+:/g)?.length || 0;
+                                          if (attempts >= 2) {
+                                              const result = await ConfirmModal.fire({
+                                                  text: 'Problem still exists after 2 attempts. Escalate to ICT Head?'
+                                              });
+                                              if (result.isConfirmed) {
+                                                  changeTicketStatus(ticket.id, 'ESCALATED', ticket.assignedToId);
+                                                  Toast.fire({ icon: 'success', title: 'Ticket Escalated' });
+                                              }
+                                          } else {
+                                              handleStatusUpdate('IN PROGRESS');
+                                          }
+                                      }} className="px-5 py-2.5 bg-white dark:bg-[#18181b] border border-red-200 text-red-600 rounded-lg text-sm font-semibold hover:bg-red-50 shadow-sm transition-colors">
+                                          Problem Still Exists (Reopen)
+                                      </button>
+                                  </>
+                              )}
+                          </div>
+                      )}
+                  </>
+              )}
+          </div>
       </div>
 
-      {/* Content Layout */}
+      {/* Details Column / Stack */}
       <div className="space-y-6">
-        {/* Description */}
-        <div className="bg-surface rounded-xl shadow-sm border border-border overflow-hidden">
-          <div className="px-5 py-3 border-b border-border bg-bg">
-              <h3 className="text-xs font-bold text-ink uppercase tracking-wider">Problem Description</h3>
-            </div>
-            <div className="p-5">
-              <p className="text-xs text-ink-muted whitespace-pre-wrap leading-relaxed">{ticket.description}</p>
-            </div>
+          {/* Problem Description */}
+          <div className="bg-white dark:bg-[#18181b] rounded-[16px] shadow-sm border border-slate-200 dark:border-white/10 overflow-hidden">
+              <div className="px-6 py-4 border-b border-slate-100 dark:border-white/10 bg-slate-50 dark:bg-white/5">
+                  <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200">Problem Description</h3>
+              </div>
+              <div className="p-6">
+                  <p className="text-sm text-slate-600 dark:text-slate-400 whitespace-pre-wrap leading-relaxed">{ticket.description}</p>
+              </div>
           </div>
 
           {/* ICT Recommendation */}
-          {(ticket.ictRecommendation || (currentUser?.role === 'ICT Support' && ticket.assignedToId === currentUser.id)) && (
-            <div className="bg-blue-50/50 rounded-xl shadow-sm border border-blue-100 overflow-hidden">
-              <div className="px-5 py-3 border-b border-blue-100 bg-blue-50/80 flex justify-between items-center">
-                <h3 className="text-xs font-bold text-blue-900 uppercase tracking-wider">ICT Recommendation</h3>
-                {currentUser?.role === 'ICT Support' && ticket.assignedToId === currentUser.id && !isEditingRecommendation && (
-                  <button 
-                    onClick={() => {
-                      setRecommendationText(ticket.ictRecommendation || '');
-                      setIsEditingRecommendation(true);
-                    }} 
-                    className="text-[10px] font-bold text-blue-600 hover:text-blue-800 uppercase tracking-wider"
-                  >
-                    Edit
-                  </button>
-                )}
-              </div>
-              <div className="p-5">
-                {isEditingRecommendation ? (
-                  <div className="space-y-3">
-                    <textarea 
-                      className="w-full p-3 bg-surface border border-blue-200 rounded-lg text-xs outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 min-h-[80px]"
-                      placeholder="e.g. Need to change the Motherboard..."
-                      value={recommendationText}
-                      onChange={(e) => setRecommendationText(e.target.value)}
-                    />
-                    <div className="flex justify-end gap-2">
-                      <button 
-                        onClick={() => setIsEditingRecommendation(false)} 
-                        className="px-4 py-2 bg-surface border border-border text-ink-muted rounded-lg text-xs font-bold hover:bg-bg transition-colors"
-                      >
-                        Cancel
-                      </button>
-                      <button 
-                        onClick={handleUpdateRecommendation}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 transition-colors shadow-sm"
-                      >
-                        Save Recommendation
-                      </button>
-                    </div>
+          {(ticket.ictRecommendation || 
+            (currentUser?.role === 'ICT Support' && ticket.assignedToId === currentUser.id && ['IN PROGRESS', 'RESOLVED', 'CLOSED', 'ESCALATED', 'REFERRED'].includes(ticket.status)) ||
+            (currentUser?.role === 'Admin' && ['ESCALATED', 'REFERRED'].includes(ticket.status))
+          ) && (
+              <div className="bg-orange-50/50 dark:bg-orange-900/20 rounded-[16px] shadow-sm border border-orange-100 dark:border-orange-900/50 overflow-hidden">
+                  <div className="px-6 py-4 border-b border-orange-100 dark:border-orange-900/50 bg-orange-50/80 dark:bg-orange-900/30 flex justify-between items-center">
+                      <h3 className="text-sm font-bold text-orange-900 dark:text-orange-100">ICT Action / Recommendation</h3>
+                      {(canAddRecommendationIct || canAddRecommendationAdmin) && !isEditingRecommendation && (
+                          <button 
+                              onClick={() => {
+                                  setRecommendationText('');
+                                  setIsEditingRecommendation(true);
+                              }} 
+                              className="text-xs font-bold text-orange-600 hover:text-orange-800 dark:text-orange-200 transition-colors"
+                          >
+                              Add Recommendation
+                          </button>
+                      )}
                   </div>
-                ) : (
-                  <p className="text-xs text-blue-900 whitespace-pre-wrap leading-relaxed font-medium">
-                    {ticket.ictRecommendation ? ticket.ictRecommendation : <span className="text-blue-400 italic">No recommendation added yet.</span>}
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Actions based on Role */}
-          {currentUser?.role === 'Admin' && ticket.status !== 'CLOSED' && (
-            <div className="bg-accent/10/50 p-5 rounded-xl border border-accent/20 shadow-sm">
-              <h3 className="text-xs font-bold text-indigo-900 uppercase tracking-wider mb-3">Assign Ticket</h3>
-              <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                <select 
-                  className="flex-1 p-2 bg-surface border border-indigo-200 rounded-lg text-xs font-medium outline-none focus:border-indigo-400"
-                  value={selectedAssignee}
-                  onChange={(e) => setSelectedAssignee(e.target.value)}
-                >
-                  <option value="">Select ICT Support...</option>
-                  {ictStaff.map(staff => {
-                    const active = tickets.filter(t => t.assignedToId === staff.id && ['ASSIGNED', 'IN PROGRESS', 'PENDING'].includes(t.status)).length;
-                    return (
-                      <option key={staff.id} value={staff.id}>{staff.name} ({active} Active Tickets)</option>
-                    );
-                  })}
-                </select>
-                <button 
-                  onClick={handleAssign}
-                  disabled={!selectedAssignee}
-                  className="px-6 py-2 bg-accent text-white text-xs font-bold rounded-lg shadow-lg shadow-accent/20 hover:bg-accent/90 disabled:opacity-50 transition-colors"
-                >
-                  Assign
-                </button>
-              </div>
-            </div>
-          )}
-
-          {currentUser?.role === 'ICT Support' && ticket.assignedToId === currentUser.id && (
-            <div className="bg-surface p-5 rounded-xl shadow-sm border border-border">
-              <h3 className="text-xs font-bold text-ink uppercase tracking-wider mb-4">Update Status</h3>
-              <div className="flex flex-wrap gap-3">
-                {ticket.status === 'ASSIGNED' && (
-                  <button onClick={() => handleStatusUpdate('IN PROGRESS')} className="px-4 py-2 bg-amber-500 text-white rounded-lg text-xs font-bold hover:bg-amber-600 shadow-sm">
-                    Start Work (In Progress)
-                  </button>
-                )}
-                {ticket.status === 'IN PROGRESS' && (
-                  <>
-                    <button onClick={() => handleStatusUpdate('PENDING')} className="px-4 py-2 bg-ink-muted/10 text-ink rounded-lg text-xs font-bold hover:bg-ink-muted/20 shadow-sm border border-border">
-                      Put in Pending
-                    </button>
-                    <button onClick={() => handleStatusUpdate('RESOLVED')} className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 shadow-sm">
-                      Mark as Resolved
-                    </button>
-                  </>
-                )}
-                {ticket.status === 'PENDING' && (
-                  <button onClick={() => handleStatusUpdate('IN PROGRESS')} className="px-4 py-2 bg-amber-500 text-white rounded-lg text-xs font-bold hover:bg-amber-600 shadow-sm">
-                    Resume Work
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
-
-          {currentUser?.role === 'Department User' && ticket.status === 'RESOLVED' && (
-            <div className="bg-emerald-50 p-5 rounded-xl border border-emerald-100 shadow-sm">
-              <div className="flex items-center space-x-2 mb-3">
-                 <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-                 <h3 className="text-xs font-bold text-emerald-900 uppercase tracking-wider">Confirm Resolution</h3>
-              </div>
-              <p className="text-emerald-800 text-xs mb-5 font-medium">ICT Support has marked this ticket as resolved. Please confirm if the issue is fixed.</p>
-              <div className="flex flex-wrap gap-3">
-                <button onClick={() => handleStatusUpdate('CLOSED')} className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 shadow-sm">
-                  Confirm & Close
-                </button>
-                <button onClick={() => handleStatusUpdate('IN PROGRESS')} className="px-4 py-2 bg-surface text-red-600 border border-red-200 rounded-lg text-xs font-bold hover:bg-red-50 shadow-sm">
-                  Problem Still Exists (Reopen)
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Discussion */}
-          <div className="bg-surface rounded-xl shadow-sm border border-border overflow-hidden">
-            <div className="px-5 py-3 border-b border-border bg-bg flex justify-between items-center">
-              <h3 className="text-xs font-bold text-ink uppercase tracking-wider">Discussion</h3>
-              <span className="text-[10px] font-bold bg-white/10 text-ink-muted px-2 py-0.5 rounded-full">{ticket.comments?.length || 0}</span>
-            </div>
-            <div className="p-5 space-y-6">
-              {ticket.comments && ticket.comments.length > 0 ? (
-                ticket.comments.map(comment => {
-                  const commentUser = users.find(u => u.id === comment.userId);
-                  const isOwn = comment.userId === currentUser?.id;
-                  
-                  return (
-                    <div key={comment.id} className={`flex gap-3 ${isOwn ? 'flex-row-reverse' : ''}`}>
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-white text-[10px] font-bold ${
-                        commentUser?.role === 'Admin' ? 'bg-accent' :
-                        commentUser?.role === 'ICT Support' ? 'bg-amber-500' : 'bg-white/10'
-                      }`}>
-                        {commentUser?.name.split(' ').map(n => n[0]).join('').substring(0,2)}
+                  <div className="p-6">
+                      <div className="mb-4">
+                          <p className="text-sm text-orange-900 dark:text-orange-100 whitespace-pre-wrap leading-relaxed">
+                              {ticket.ictRecommendation ? ticket.ictRecommendation : <span className="text-orange-400 italic">No action or recommendation recorded yet.</span>}
+                          </p>
                       </div>
-                      <div className={`max-w-[80%] ${isOwn ? 'text-right' : 'text-left'}`}>
-                        <div className="flex items-baseline gap-2 mb-1 justify-between">
-                          <span className="text-[10px] font-bold text-ink-muted">{commentUser?.name}</span>
-                          <span className="text-[8px] text-ink-muted font-medium">{format(new Date(comment.createdAt), 'MMM d, h:mm a')}</span>
-                        </div>
-                        <div className={`px-4 py-2.5 rounded-xl text-xs ${
-                          isOwn 
-                            ? 'bg-accent text-white rounded-tr-none' 
-                            : 'bg-bg border border-border text-ink-muted rounded-tl-none'
-                        }`}>
-                          {comment.text}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="text-center text-xs text-ink-muted py-4">No comments yet. Start the discussion below.</div>
+                      
+                      {isEditingRecommendation && (
+                          <div className="space-y-4 pt-4 border-t border-orange-100 dark:border-orange-900/30">
+                              <textarea 
+                                  className="w-full p-4 bg-white dark:bg-[#18181b] border border-orange-200 dark:border-orange-900/50 rounded-xl text-sm outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 min-h-[100px]"
+                                  placeholder="Detail the actions taken or recommended repairs..."
+                                  value={recommendationText}
+                                  onChange={(e) => setRecommendationText(e.target.value)}
+                              />
+                              <div className="flex justify-end gap-3">
+                                  <button 
+                                      onClick={() => setIsEditingRecommendation(false)} 
+                                      className="px-5 py-2.5 bg-white dark:bg-[#18181b] border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-400 rounded-lg text-sm font-semibold hover:bg-slate-50 dark:bg-white/5 transition-colors"
+                                  >
+                                      Cancel
+                                  </button>
+                                  <button 
+                                      onClick={handleUpdateRecommendation}
+                                      disabled={!recommendationText.trim()}
+                                      className="px-5 py-2.5 bg-orange-600 text-white rounded-lg text-sm font-semibold hover:bg-orange-700 disabled:opacity-50 transition-colors shadow-sm"
+                                  >
+                                      Save
+                                  </button>
+                              </div>
+                          </div>
+                      )}
+                  </div>
+              </div>
+          )}
+          
+          {/* Discussion / Comments */}
+          <div className="bg-white dark:bg-[#18181b] rounded-[16px] shadow-sm border border-slate-200 dark:border-white/10 overflow-hidden">
+              <div className="px-6 py-4 border-b border-slate-100 dark:border-white/10 bg-slate-50 dark:bg-white/5 flex justify-between items-center">
+                  <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200">Discussion & Activity</h3>
+                  <span className="text-xs font-semibold bg-slate-200 dark:bg-white/10 text-slate-600 dark:text-slate-400 px-2.5 py-1 rounded-full">{ticket.comments?.filter(c => !c.text.startsWith('System: Status changed to')).length || 0}</span>
+              </div>
+              <div className="p-6 space-y-6">
+                  {ticket.comments && ticket.comments.filter(c => !c.text.startsWith('System: Status changed to')).length > 0 ? (
+                      ticket.comments.filter(c => !c.text.startsWith('System: Status changed to')).map(comment => {
+                          const commentUser = users.find(u => u.id === comment.userId);
+                          const isOwn = comment.userId === currentUser?.id;
+                          
+                          return (
+                              <div key={comment.id} className={`flex gap-4 ${isOwn ? 'flex-row-reverse' : ''}`}>
+                                  <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-white text-sm font-bold ${
+                                      commentUser?.role === 'Admin' ? 'bg-slate-800' :
+                                      commentUser?.role === 'ICT Support' ? 'bg-orange-600' : 'bg-slate-400'
+                                  }`}>
+                                      {commentUser?.name.split(' ').map(n => n[0]).join('').substring(0,2)}
+                                  </div>
+                                  <div className={`max-w-[85%] ${isOwn ? 'text-right' : 'text-left'}`}>
+                                      <div className={`flex items-baseline gap-3 mb-1.5 ${isOwn ? 'justify-end' : 'justify-start'}`}>
+                                          <span className="text-xs font-bold text-slate-700 dark:text-slate-300">{commentUser?.name}</span>
+                                          <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">{format(new Date(comment.createdAt), 'MMM d, h:mm a')}</span>
+                                      </div>
+                                      <div className={`px-5 py-3 rounded-2xl text-sm ${
+                                          isOwn 
+                                              ? 'bg-orange-600 text-white rounded-tr-none' 
+                                              : 'bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 rounded-tl-none'
+                                      }`}>
+                                          {comment.text}
+                                      </div>
+                                  </div>
+                              </div>
+                          );
+                      })
+                  ) : (
+                      <div className="text-center text-sm text-slate-400 dark:text-slate-500 py-8">No comments yet. Start the discussion below.</div>
+                  )}
+              </div>
+              
+              {ticket.status !== 'CLOSED' && (
+                  <div className="p-6 border-t border-slate-100 dark:border-white/10 bg-slate-50 dark:bg-white/5">
+                      <form onSubmit={handleAddComment} className="flex gap-4">
+                          <input
+                              id="comment-input"
+                              type="text"
+                              value={newCommentText}
+                              onChange={(e) => setNewCommentText(e.target.value)}
+                              placeholder="Type a message or update..."
+                              className="flex-1 bg-white dark:bg-[#18181b] border border-slate-300 dark:border-white/20 rounded-xl px-5 py-3 text-sm outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
+                          />
+                          <button 
+                              type="submit"
+                              disabled={!newCommentText.trim()}
+                              className="bg-orange-600 text-white px-6 py-3 rounded-xl text-sm font-semibold disabled:opacity-50 hover:bg-orange-700 transition-colors shadow-sm"
+                          >
+                              Send
+                          </button>
+                      </form>
+                  </div>
               )}
-            </div>
-            
-            {ticket.status !== 'CLOSED' && (
-              <div className="p-5 border-t border-border bg-bg/50">
-                <form onSubmit={handleAddComment} className="flex gap-3">
-                  <input
-                    type="text"
-                    value={newCommentText}
-                    onChange={(e) => setNewCommentText(e.target.value)}
-                    placeholder="Type a message..."
-                    className="flex-1 bg-surface border border-border rounded-lg px-4 py-2 text-xs outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400"
-                  />
-                  <button 
-                    type="submit"
-                    disabled={!newCommentText.trim()}
-                    className="bg-accent text-white px-5 py-2 rounded-lg text-xs font-bold disabled:opacity-50 hover:bg-accent/90 transition-colors shadow-sm"
-                  >
-                    Send
-                  </button>
-                </form>
-              </div>
-            )}
           </div>
       </div>
+
+      {/* Referral Modal */}
+      {showReferralModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-[#18181b] rounded-2xl shadow-xl w-full max-w-lg overflow-hidden border border-slate-200 dark:border-white/10">
+            <div className="px-6 py-4 border-b border-slate-100 dark:border-white/10 flex justify-between items-center bg-slate-50 dark:bg-white/5">
+              <h3 className="font-bold text-slate-800 dark:text-slate-200">Assess & Refer to External Technician</h3>
+              <button onClick={() => setShowReferralModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">&times;</button>
+            </div>
+            <form onSubmit={handleReferralSubmit} className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 uppercase tracking-wider">Reason</label>
+                <input required type="text" value={referralData.reason} onChange={e => setReferralData({...referralData, reason: e.target.value})} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg text-sm outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 uppercase tracking-wider">Service Provider</label>
+                <input required type="text" value={referralData.serviceProvider} onChange={e => setReferralData({...referralData, serviceProvider: e.target.value})} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg text-sm outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500" placeholder="e.g. Dell Service Center" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 uppercase tracking-wider">Contact Person</label>
+                  <input type="text" value={referralData.contactPerson} onChange={e => setReferralData({...referralData, contactPerson: e.target.value})} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg text-sm outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 uppercase tracking-wider">Contact No.</label>
+                  <input type="text" value={referralData.contactNo} onChange={e => setReferralData({...referralData, contactNo: e.target.value})} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg text-sm outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 uppercase tracking-wider">Reference / Job Order No.</label>
+                <input type="text" value={referralData.referenceNumber} onChange={e => setReferralData({...referralData, referenceNumber: e.target.value})} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg text-sm outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 uppercase tracking-wider">Date Referred</label>
+                  <input required type="date" value={referralData.dateReferred} onChange={e => setReferralData({...referralData, dateReferred: e.target.value})} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg text-sm outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 uppercase tracking-wider">Expected Return</label>
+                  <input type="date" value={referralData.expectedReturn} onChange={e => setReferralData({...referralData, expectedReturn: e.target.value})} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg text-sm outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 uppercase tracking-wider">Notes</label>
+                <textarea rows={2} value={referralData.notes} onChange={e => setReferralData({...referralData, notes: e.target.value})} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg text-sm outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500" />
+              </div>
+              <div className="pt-4 flex justify-end gap-3 border-t border-slate-100 dark:border-white/10">
+                <button type="button" onClick={() => setShowReferralModal(false)} className="px-5 py-2.5 text-slate-600 dark:text-slate-400 font-semibold text-sm hover:bg-slate-50 dark:hover:bg-white/5 rounded-lg transition-colors">Cancel</button>
+                <button type="submit" className="px-5 py-2.5 bg-purple-600 text-white font-semibold text-sm rounded-lg hover:bg-purple-700 shadow-sm transition-colors">Confirm Referral</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

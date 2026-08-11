@@ -22,10 +22,18 @@ export const mapAssetFromDB = (dbAsset: any) => ({
   dateAudited: dbAsset.date_audited,
   auditedBy: dbAsset.audited_by,
   remarks: dbAsset.remarks,
+  history: dbAsset.asset_history ? dbAsset.asset_history.map((h: any) => ({
+    id: h.id,
+    assetId: h.asset_id,
+    action: h.action,
+    changes: h.changes,
+    performedBy: h.performed_by,
+    createdAt: h.created_at
+  })).sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) : []
 });
 
 export const mapAssetToDB = (asset: any) => ({
-  department_id: asset.officeId,
+  department_id: asset.officeId || null,
   equipment_type: asset.equipmentType,
   property_number: asset.propertyNumber,
   inventory_number: asset.inventoryNumber,
@@ -42,29 +50,46 @@ export const mapAssetToDB = (asset: any) => ({
   microsoft_office: asset.microsoftOffice,
   condition: asset.condition,
   operational_status: asset.operationalStatus,
-  acquisition_cost: asset.acquisitionCost,
-  date_acquired: asset.dateAcquired,
-  date_audited: asset.dateAudited,
+  acquisition_cost: asset.acquisitionCost || null,
+  date_acquired: asset.dateAcquired || null,
+  date_audited: asset.dateAudited || null,
   audited_by: asset.auditedBy,
   remarks: asset.remarks,
 });
 
-export const mapTicketFromDB = (dbTicket: any) => ({
-  id: dbTicket.id,
-  ticketNumber: dbTicket.id.split('-')[0].toUpperCase(),
-  requesterId: dbTicket.reported_by,
-  officeId: dbTicket.department_id,
-  categoryId: dbTicket.category,
-  priority: dbTicket.priority,
-  subject: dbTicket.title,
-  description: dbTicket.description,
-  status: dbTicket.status,
-  assignedToId: dbTicket.assigned_to,
-  createdAt: dbTicket.created_at,
-  updatedAt: dbTicket.updated_at,
-  recommendation: dbTicket.recommendation,
-  comments: [] // We'll fetch comments separately if needed or join them
-});
+export const mapTicketFromDB = (dbTicket: any) => {
+  let description = dbTicket.description || '';
+  let assetId = undefined;
+  
+  const assetIdMatch = description.match(/<!-- ASSET_ID:(.+?) -->/);
+  if (assetIdMatch) {
+    assetId = assetIdMatch[1];
+    description = description.replace(assetIdMatch[0], '').trim();
+  }
+
+  return {
+    id: dbTicket.id,
+    ticketNumber: dbTicket.id.split('-')[0].toUpperCase(),
+    requesterId: dbTicket.reported_by,
+    officeId: dbTicket.department_id,
+    categoryId: dbTicket.category,
+    priority: dbTicket.priority,
+    subject: dbTicket.title,
+    description: description,
+    assetId: assetId,
+    status: dbTicket.status.toUpperCase(),
+    assignedToId: dbTicket.assigned_to,
+    createdAt: dbTicket.created_at,
+    updatedAt: dbTicket.updated_at,
+    ictRecommendation: dbTicket.recommendation,
+    comments: dbTicket.ticket_comments ? dbTicket.ticket_comments.map((c: any) => ({
+      id: c.id,
+      userId: c.author_id,
+      text: c.content,
+      createdAt: c.created_at
+    })).sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()) : [] 
+  };
+};
 
 export const mapTicketToDB = (ticket: any) => ({
   title: ticket.subject,
@@ -75,7 +100,7 @@ export const mapTicketToDB = (ticket: any) => ({
   reported_by: ticket.requesterId,
   assigned_to: ticket.assignedToId,
   department_id: ticket.officeId,
-  recommendation: ticket.recommendation
+  recommendation: ticket.ictRecommendation
 });
 
 export const mapUserFromDB = (dbProfile: any) => ({
@@ -88,5 +113,7 @@ export const mapUserFromDB = (dbProfile: any) => ({
 
 export const mapOfficeFromDB = (dbDepartment: any) => ({
   id: dbDepartment.id,
-  name: dbDepartment.name
+  name: dbDepartment.name,
+  acronym: dbDepartment.acronym,
+  email: dbDepartment.email
 });

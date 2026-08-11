@@ -13,6 +13,7 @@ import { IctLogin } from './pages/IctLogin';
 import { AdminDepartments } from './components/AdminDepartments';
 import { AdminAnalytics } from './components/AdminAnalytics';
 import { AdminUsers } from './components/AdminUsers';
+import { GlobalAuditLogs } from './components/GlobalAuditLogs';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
@@ -47,12 +48,16 @@ function MainApp() {
       return <AdminDepartments />;
     }
 
-    if (currentTab === 'analytics' && profile?.role === 'system_admin') {
+    if (currentTab === 'analytics' && (profile?.role === 'system_admin' || profile?.role === 'ict_support')) {
       return <AdminAnalytics />;
     }
 
     if (currentTab === 'users' && profile?.role === 'system_admin') {
       return <AdminUsers />;
+    }
+
+    if (currentTab === 'audit_logs' && profile?.role === 'system_admin') {
+      return <GlobalAuditLogs />;
     }
     
     if (currentTab === 'tickets') {

@@ -24,9 +24,19 @@ CREATE TYPE public.user_role AS ENUM ('system_admin', 'ict_support', 'employee')
 CREATE TYPE public.user_status AS ENUM ('active', 'inactive', 'suspended');
 
 -- 4. Tables
+CREATE TABLE public.user_invitations (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  email TEXT UNIQUE NOT NULL,
+  role public.user_role NOT NULL,
+  department_id UUID REFERENCES public.departments(id) ON DELETE SET NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
 CREATE TABLE public.departments (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name TEXT NOT NULL,
+  acronym TEXT,
+  email TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
@@ -94,6 +104,7 @@ CREATE TABLE public.ticket_comments (
 );
 
 -- 5. Row Level Security (RLS)
+ALTER TABLE public.user_invitations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.departments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.assets ENABLE ROW LEVEL SECURITY;
@@ -107,6 +118,11 @@ GRANT ALL PRIVILEGES ON ALL ROUTINES IN SCHEMA public TO anon, authenticated, se
 GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role;
 
 -- 6. RLS Policies
+
+-- Invitations
+CREATE POLICY "Admins can manage invitations" ON public.user_invitations FOR ALL USING (
+  EXISTS (SELECT 1 FROM public.profiles WHERE profiles.id = auth.uid() AND profiles.role = 'system_admin')
+);
 
 -- Departments
 CREATE POLICY "Departments are viewable by everyone" ON public.departments FOR SELECT USING (true);
@@ -154,6 +170,20 @@ CREATE POLICY "Ticket updates" ON public.tickets FOR UPDATE USING (
 CREATE POLICY "Comments viewable" ON public.ticket_comments FOR SELECT USING (true);
 CREATE POLICY "Comments insert" ON public.ticket_comments FOR INSERT WITH CHECK (auth.uid() = author_id);
 
+CREATE TABLE public.asset_history (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  asset_id UUID REFERENCES public.assets(id) ON DELETE CASCADE,
+  action TEXT NOT NULL,
+  changes TEXT NOT NULL,
+  performed_by UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.asset_history ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Asset history viewable" ON public.asset_history FOR SELECT USING (true);
+CREATE POLICY "Asset history insert" ON public.asset_history FOR INSERT WITH CHECK (auth.uid() = performed_by);
+
 -- 7. Triggers
 CREATE OR REPLACE FUNCTION public.update_updated_at_column()
 RETURNS TRIGGER AS $$
@@ -172,9 +202,17 @@ CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger
 LANGUAGE plpgsql
 SECURITY DEFINER SET search_path = public
-AS $$
+AS $
+DECLARE
+  invited_role public.user_role;
+  invited_dept UUID;
 BEGIN
-  INSERT INTO public.profiles (id, email, full_name, role, status)
+  -- Check if they were invited
+  SELECT role, department_id INTO invited_role, invited_dept 
+  FROM public.user_invitations 
+  WHERE email = new.email;
+
+  INSERT INTO public.profiles (id, email, full_name, role, department_id, status)
   VALUES (
     new.id,
     COALESCE(new.email, ''),
@@ -183,10 +221,14 @@ BEGIN
       split_part(new.email, '@', 1),
       'New User'
     ),
-    -- Automatically assign system_admin to your email, others become employee
-    CASE WHEN new.email = 'systems@malungon.gov.ph' THEN 'system_admin'::public.user_role ELSE 'employee'::public.user_role END,
+    COALESCE(invited_role, CASE WHEN new.email = 'systems@malungon.gov.ph' THEN 'system_admin'::public.user_role ELSE 'employee'::public.user_role END),
+    invited_dept,
     'active'::public.user_status
   );
+  
+  -- Delete the invitation after use
+  DELETE FROM public.user_invitations WHERE email = new.email;
+  
   RETURN new;
 EXCEPTION
   WHEN others THEN
@@ -199,5 +241,44 @@ CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
--- 9. Reload PostgREST schema cache to resolve 404 errors after dropping/recreating tables
+-- 9. Initial Seed Data
+INSERT INTO public.departments (name, acronym, email) VALUES 
+('Mayor''s Office Administrative Section', 'MO-Admin', 'mo_admin@malungon.gov.ph'),
+('Bureau of Fire Protection', 'BFP', 'fire@malungon.gov.ph'),
+('Bids and Awards Committee', 'BAC', 'bac@malungon.gov.ph'),
+('Bureau of Internal Revenue', 'BIR', 'bir@malungon.gov.ph'),
+('Civil Security Unit', 'CSU', 'csu@malungon.gov.ph'),
+('General Services Office', 'GSO', 'gso@malungon.gov.ph'),
+('Local Disaster Risk Reduction and Management Office', 'LDRRMO', 'ldrrmo@malungon.gov.ph'),
+('Liga ng mga Barangay', 'LB', 'liga@malungon.gov.ph'),
+('Local Youth Development Office', 'LYDO', 'lydo@malungon.gov.ph'),
+('Municipal Economic Enterprise Development Office', 'MEEDO', 'market@malungon.gov.ph'),
+('Municipal Environment and Natural Resources Office', 'MENRO', 'menro@malungon.gov.ph'),
+('Municipal Local Government Operations Office', 'MLGOO', 'mlgoo@malungon.gov.ph'),
+('Municipal Social Welfare and Development Office', 'MSWDO', 'mswdo@malungon.gov.ph'),
+('Municipal Accounting Office', 'ACCOUNTING', 'accounting@malungon.gov.ph'),
+('Office of the Municipal Agriculturist', 'OMAG', 'agri@malungon.gov.ph'),
+('Municipal Assessor''s Office', 'MASSO', 'assessor@malungon.gov.ph'),
+('Municipal Budget Office', 'MBO', 'budget@malungon.gov.ph'),
+('Municipal Civil Registrar Office', 'MCR', 'registrar@malungon.gov.ph'),
+('Municipal Cooperative Development Office', 'MCDO', 'coop@malungon.gov.ph'),
+('Municipal Engineering Office', 'MEO', 'engineer@malungon.gov.ph'),
+('Municipal Health Office', 'MHO', 'health@malungon.gov.ph'),
+('Municipal Information Office', 'MIO', 'info@malungon.gov.ph'),
+('Municipal Treasurer''s Office', 'MTO', 'treasurer@malungon.gov.ph'),
+('Municipal Tribal Council', 'MTC', 'tribal@malungon.gov.ph'),
+('Municipal Nutrition Office', 'MNO', 'nutrition@malungon.gov.ph'),
+('Office of the Mayor', 'OM', 'mayor@malungon.gov.ph'),
+('Office of the Vice Mayor', 'OVM', 'vicemayor@malungon.gov.ph'),
+('Business Permits and Licensing Office', 'BPLO', 'permits@malungon.gov.ph'),
+('Human Resource Management Office', 'HRMO', 'hr@malungon.gov.ph'),
+('Public Employment Service Office', 'PESO', 'peso@malungon.gov.ph'),
+('Municipal Planning and Development Office', 'MPDO', 'planning@malungon.gov.ph'),
+('Philippine National Police', 'PNP', 'pnp@malungon.gov.ph'),
+('Sangguniang Bayan', 'SB', 'sb@malungon.gov.ph'),
+('Municipal Tourism Office', 'MTO', 'tourism@malungon.gov.ph'),
+('Systems Administrator', 'SYSTEMS', 'systems@malungon.gov.ph'),
+('Web Administrator', 'WEBADMIN', 'webadmin@malungon.gov.ph');
+
+-- 10. Reload PostgREST schema cache to resolve 404 errors after dropping/recreating tables
 NOTIFY pgrst, 'reload schema';

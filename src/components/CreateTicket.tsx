@@ -7,7 +7,6 @@ export function CreateTicket({ onBack }: { onBack: () => void }) {
   const { categories, assets, currentUser, createNewTicket } = useAppContext();
   
   const [categoryId, setCategoryId] = useState(categories[0]?.id || '');
-  const [priority, setPriority] = useState('Medium');
   const [assetId, setAssetId] = useState('');
   const [subject, setSubject] = useState('');
   const [description, setDescription] = useState('');
@@ -28,7 +27,7 @@ export function CreateTicket({ onBack }: { onBack: () => void }) {
         requesterId: currentUser.id,
         officeId: currentUser.officeId,
         categoryId,
-        priority,
+        priority: 'Medium', // Default priority, to be updated by admin later
         assetId: assetId || undefined,
         subject,
         description
@@ -58,7 +57,7 @@ export function CreateTicket({ onBack }: { onBack: () => void }) {
         
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
+            <div className="md:col-span-2">
               <label className="block text-[10px] font-bold uppercase tracking-wider text-ink-muted mb-1.5">Category *</label>
               <select 
                 required
@@ -67,21 +66,6 @@ export function CreateTicket({ onBack }: { onBack: () => void }) {
                 className="w-full p-2.5 bg-bg border border-border rounded-lg text-xs font-medium outline-none focus:ring-2 focus:ring-accent"
               >
                 {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-            </div>
-            
-            <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-ink-muted mb-1.5">Priority *</label>
-              <select 
-                required
-                value={priority}
-                onChange={e => setPriority(e.target.value)}
-                className="w-full p-2.5 bg-bg border border-border rounded-lg text-xs font-medium outline-none focus:ring-2 focus:ring-accent"
-              >
-                <option value="Critical">Critical</option>
-                <option value="High">High</option>
-                <option value="Medium">Medium</option>
-                <option value="Low">Low</option>
               </select>
             </div>
           </div>
@@ -95,7 +79,9 @@ export function CreateTicket({ onBack }: { onBack: () => void }) {
             >
               <option value="">-- Select an Asset --</option>
               {officeAssets.map(a => (
-                <option key={a.id} value={a.id}>{a.equipmentType} ({a.propertyNumber})</option>
+                <option key={a.id} value={a.id}>
+                  {a.equipmentType} {a.propertyNumber ? `(${a.propertyNumber})` : a.serialNumber ? `(SN: ${a.serialNumber})` : ''}
+                </option>
               ))}
             </select>
             <p className="text-[10px] text-ink-muted mt-1.5 font-medium">Select the specific equipment if applicable.</p>
