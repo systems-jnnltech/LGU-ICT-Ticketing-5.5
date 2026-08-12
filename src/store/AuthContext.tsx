@@ -61,19 +61,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       checkSessionAndProfile(session);
     });
-    
-    const handleBeforeUnload = () => {
-       if (profile) {
-         localStorage.setItem(`last_logout_${profile.id}`, new Date().toISOString());
-       }
-    };
-    window.addEventListener('beforeunload', handleBeforeUnload);
 
-    return () => {
-      subscription.unsubscribe();
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
-  }, [profile]);
+    return () => subscription.unsubscribe();
+  }, []);
 
   const fetchProfile = async (currentUser: SupabaseUser) => {
     try {
@@ -195,9 +185,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
-    if (profile) {
-      localStorage.setItem(`last_logout_${profile.id}`, new Date().toISOString());
-    }
     if (!isSupabaseConfigured) {
       setUser(null);
       setProfile(null);
