@@ -159,9 +159,9 @@ export function DispatchFormModal({ ticket, asset, department, onClose, onSave }
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4 overflow-y-auto">
-      <div className="bg-bg w-full max-w-4xl rounded-2xl shadow-2xl flex flex-col my-8">
-        <div className="p-6 border-b border-border flex items-center justify-between sticky top-0 bg-bg/95 backdrop-blur z-10 rounded-t-2xl">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+      <div className="bg-bg w-full max-w-4xl max-h-[90vh] rounded-2xl shadow-2xl flex flex-col">
+        <div className="p-6 border-b border-border flex items-center justify-between shrink-0 rounded-t-2xl">
           <div>
             <h2 className="text-lg font-bold text-ink">External Technician Details</h2>
             <p className="text-sm text-ink-muted">Ticket #{ticket.ticketNumber}</p>
@@ -171,7 +171,7 @@ export function DispatchFormModal({ ticket, asset, department, onClose, onSave }
           </button>
         </div>
 
-        <div className="p-6 overflow-y-auto space-y-8">
+        <div className="p-6 overflow-y-auto space-y-8 flex-1">
           <section>
             <h3 className="text-sm font-bold text-ink uppercase tracking-widest mb-4 pb-2 border-b border-border">1. Ticket & Asset Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
@@ -260,7 +260,7 @@ export function DispatchFormModal({ ticket, asset, department, onClose, onSave }
           </form>
         </div>
 
-        <div className="p-6 border-t border-border bg-surface rounded-b-2xl flex items-center justify-end gap-3 sticky bottom-0">
+        <div className="p-6 border-t border-border bg-surface rounded-b-2xl flex items-center justify-end gap-3 shrink-0">
           <button type="button" onClick={handlePrint} className="px-5 py-2.5 bg-bg border border-border text-ink rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-surface transition-colors flex items-center gap-2">
             <Printer className="w-4 h-4" /> Print Dispatch Form
           </button>
