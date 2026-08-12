@@ -482,12 +482,51 @@ Notes: ${referralData.notes}`;
                                             Assess & Refer Externally
                                         </button>
                                     )}
+                                    {ticket.status === 'REFERRED' && (
+                                        <button onClick={() => {
+                                            const referralComment = ticket.comments?.find(c => c.text.startsWith('Referred to External Technician'));
+                                            if (referralComment) {
+                                                Swal.fire({
+                                                    title: 'External Technician Details',
+                                                    html: `<div class="text-left text-sm whitespace-pre-wrap font-sans mt-4 bg-bg p-4 rounded-xl border border-border text-ink">${referralComment.text}</div>`,
+                                                    confirmButtonColor: '#f97316',
+                                                    confirmButtonText: 'Close',
+                                                    customClass: { popup: 'rounded-2xl', title: 'font-bold' }
+                                                });
+                                            } else {
+                                                Toast.fire({ icon: 'info', title: 'No technician details found' });
+                                            }
+                                        }} className="w-full px-5 py-3.5 bg-purple-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:opacity-90 shadow-sm transition-all active:scale-95 mb-3">
+                                            View Technician Details
+                                        </button>
+                                    )}
                                     {['ESCALATED', 'REFERRED'].includes(ticket.status) && (
                                         <button 
-                                            onClick={() => handleStatusUpdate('RESOLVED', 'Marked ticket as Repaired / Resolved')}
+                                            onClick={async () => {
+                                                if (ticket.status === 'REFERRED') {
+                                                    const confirmResult = await Swal.fire({
+                                                        title: 'Mark Ticket Resolved & Close?',
+                                                        text: 'The external repair has been completed. This will permanently close the ticket. The Department will not need to confirm this resolution.',
+                                                        icon: 'warning',
+                                                        showCancelButton: true,
+                                                        confirmButtonText: 'Mark Resolved & Close',
+                                                        cancelButtonText: 'Cancel',
+                                                        confirmButtonColor: '#22c55e',
+                                                        cancelButtonColor: '#64748b',
+                                                        customClass: { popup: 'rounded-2xl', title: 'font-bold' }
+                                                    });
+                                                    if (confirmResult.isConfirmed) {
+                                                        changeTicketStatus(ticket.id, 'CLOSED', ticket.assignedToId);
+                                                        addComment(ticket.id, 'Action: External repair completed, ticket permanently closed');
+                                                        Toast.fire({ icon: 'success', title: 'Ticket Closed' });
+                                                    }
+                                                } else {
+                                                    handleStatusUpdate('RESOLVED', 'Marked ticket as Repaired / Resolved');
+                                                }
+                                            }}
                                             className="w-full px-5 py-3.5 bg-green-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:opacity-90 shadow-sm transition-all flex items-center justify-center gap-2 active:scale-95"
                                         >
-                                            <CheckCircle2 className="w-4 h-4" /> Mark Resolved
+                                            <CheckCircle2 className="w-4 h-4" /> {ticket.status === 'REFERRED' ? 'Mark Resolved & Close' : 'Mark Resolved'}
                                         </button>
                                     )}
                                     {ticket.status === 'RESOLVED' && hasBeenEscalated && (
@@ -534,8 +573,25 @@ Notes: ${referralData.notes}`;
                                     }} className="w-full px-5 py-3.5 bg-purple-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:opacity-90 shadow-sm transition-all active:scale-95">
                                         View Technician Details
                                     </button>
-                                    <button onClick={() => handleStatusUpdate('RESOLVED', 'Marked ticket as Repaired / Resolved')} className="w-full px-5 py-3.5 bg-green-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:opacity-90 shadow-sm transition-all flex items-center justify-center gap-2 active:scale-95">
-                                        <CheckCircle2 className="w-4 h-4"/> Mark Resolved
+                                    <button onClick={async () => {
+                                        const confirmResult = await Swal.fire({
+                                            title: 'Mark Ticket Resolved & Close?',
+                                            text: 'The external repair has been completed. This will permanently close the ticket. The Department will not need to confirm this resolution.',
+                                            icon: 'warning',
+                                            showCancelButton: true,
+                                            confirmButtonText: 'Mark Resolved & Close',
+                                            cancelButtonText: 'Cancel',
+                                            confirmButtonColor: '#22c55e',
+                                            cancelButtonColor: '#64748b',
+                                            customClass: { popup: 'rounded-2xl', title: 'font-bold' }
+                                        });
+                                        if (confirmResult.isConfirmed) {
+                                            changeTicketStatus(ticket.id, 'CLOSED', ticket.assignedToId);
+                                            addComment(ticket.id, 'Action: External repair completed, ticket permanently closed');
+                                            Toast.fire({ icon: 'success', title: 'Ticket Closed' });
+                                        }
+                                    }} className="w-full px-5 py-3.5 bg-green-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:opacity-90 shadow-sm transition-all flex items-center justify-center gap-2 active:scale-95">
+                                        <CheckCircle2 className="w-4 h-4"/> Mark Resolved & Close
                                     </button>
                                 </>
                             )}
@@ -636,7 +692,7 @@ Notes: ${referralData.notes}`;
                                             if (confirmResult.isConfirmed) {
                                                 if (attempts >= 2) {
                                                     changeTicketStatus(ticket.id, 'ESCALATED', ticket.assignedToId);
-                                                    addComment(ticket.id, `${reportText}\n\nAction: Ticket escalated to ICT Head after two unsuccessful resolution attempts.`);
+                                                    addComment(ticket.id, `${reportText}\n\nAction: Escalated ticket (Problem still exists after multiple attempts)`);
                                                     Toast.fire({ icon: 'success', title: 'Ticket Escalated' });
                                                 } else {
                                                     changeTicketStatus(ticket.id, 'IN PROGRESS', ticket.assignedToId);
