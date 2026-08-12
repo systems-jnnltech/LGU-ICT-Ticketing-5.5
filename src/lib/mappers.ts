@@ -93,8 +93,7 @@ export const mapAssetFromDB = (dbAsset: any) => ({
   dateAcquired: dbAsset.date_acquired || 'N/A',
   dateAudited: dbAsset.date_audited || 'N/A',
   auditedBy: dbAsset.audited_by,
-  remarks: dbAsset.remarks,
-  history: []
+  remarks: dbAsset.remarks
 });
 
 export const mapAssetToDB = (asset: any) => ({
