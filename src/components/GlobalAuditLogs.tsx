@@ -63,20 +63,6 @@ export function GlobalAuditLogs() {
         userId: null,
         color: 'text-indigo-500'
       });
-
-      if (asset.history) {
-        asset.history.forEach(h => {
-          allLogs.push({
-            id: `asset-hist-${h.id}`,
-            timestamp: h.createdAt || new Date().toISOString(),
-            type: 'ASSET_HISTORY',
-            icon: Activity,
-            description: `Asset ${asset.propertyNumber} - ${h.action}${h.changes ? `: ${h.changes}` : ''}`,
-            userId: h.performedBy,
-            color: 'text-indigo-500'
-          });
-        });
-      }
     });
 
     allLogs.sort((a, b) => {
