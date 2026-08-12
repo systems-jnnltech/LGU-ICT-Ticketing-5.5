@@ -603,32 +603,41 @@ Notes: ${referralData.notes}`;
 
                                         if (result.isConfirmed) {
                                             const { reason, details } = result.value;
+                                            const attempts = (ticket.ictRecommendation || '').match(/Taken \d+:/g)?.length || 0;
+                                            const reportText = `Problem Still Exists Report:\nReason: ${reason}${details ? '\nDetails: ' + details : ''}`;
 
-                                            const confirmResult = await Swal.fire({
-                                                title: 'Are you sure?',
-                                                text: 'You are about to report that the problem still exists. This will return the ticket to ICT Support for another resolution attempt.',
-                                                icon: 'warning',
-                                                showCancelButton: true,
-                                                confirmButtonText: 'Yes, Submit Report',
-                                                cancelButtonText: 'Cancel',
-                                                confirmButtonColor: '#ef4444',
-                                                cancelButtonColor: '#64748b',
-                                                customClass: { popup: 'rounded-2xl', title: 'font-bold' }
-                                            });
+                                            let confirmResult;
+                                            if (attempts >= 2) {
+                                                confirmResult = await Swal.fire({
+                                                    title: 'Are you sure?',
+                                                    text: 'The problem still exists after 2 resolution attempts. Submitting this report will escalate the ticket to ICT Head for further assessment.',
+                                                    icon: 'warning',
+                                                    showCancelButton: true,
+                                                    confirmButtonText: 'Yes, Escalate to ICT Head',
+                                                    cancelButtonText: 'Cancel',
+                                                    confirmButtonColor: '#ef4444',
+                                                    cancelButtonColor: '#64748b',
+                                                    customClass: { popup: 'rounded-2xl', title: 'font-bold' }
+                                                });
+                                            } else {
+                                                confirmResult = await Swal.fire({
+                                                    title: 'Are you sure?',
+                                                    text: 'You are about to report that the problem still exists. This will return the ticket to ICT Support for another resolution attempt.',
+                                                    icon: 'warning',
+                                                    showCancelButton: true,
+                                                    confirmButtonText: 'Yes, Submit Report',
+                                                    cancelButtonText: 'Cancel',
+                                                    confirmButtonColor: '#ef4444',
+                                                    cancelButtonColor: '#64748b',
+                                                    customClass: { popup: 'rounded-2xl', title: 'font-bold' }
+                                                });
+                                            }
 
                                             if (confirmResult.isConfirmed) {
-                                                const attempts = (ticket.ictRecommendation || '').match(/Taken \d+:/g)?.length || 0;
-                                                const reportText = `Problem Still Exists Report:\nReason: ${reason}${details ? '\nDetails: ' + details : ''}`;
-                                                
                                                 if (attempts >= 2) {
-                                                    const escResult = await ConfirmModal.fire({
-                                                        text: 'Problem still exists after 2 attempts. Escalate to ICT Head?'
-                                                    });
-                                                    if (escResult.isConfirmed) {
-                                                        changeTicketStatus(ticket.id, 'ESCALATED', ticket.assignedToId);
-                                                        addComment(ticket.id, `${reportText}\n\nAction: Escalated ticket (Problem still exists after multiple attempts)`);
-                                                        Toast.fire({ icon: 'success', title: 'Ticket Escalated' });
-                                                    }
+                                                    changeTicketStatus(ticket.id, 'ESCALATED', ticket.assignedToId);
+                                                    addComment(ticket.id, `${reportText}\n\nAction: Escalated ticket (Problem still exists after multiple attempts)`);
+                                                    Toast.fire({ icon: 'success', title: 'Ticket Escalated' });
                                                 } else {
                                                     changeTicketStatus(ticket.id, 'IN PROGRESS', ticket.assignedToId);
                                                     addComment(ticket.id, `${reportText}\n\nAction: Reopened ticket (Problem still exists)`);
