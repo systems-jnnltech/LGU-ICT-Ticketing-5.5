@@ -75,10 +75,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (error) {
         if (error.code === 'PGRST116') {
-           // Enforce domain restriction for auto-creation
-           if (currentUser.app_metadata?.provider === 'google') {
+           // Check if there is a pending invitation
+           const { data: invitation, error: invError } = await supabase
+             .from('user_invitations')
+             .select('*')
+             .eq('email', currentUser.email)
+             .single();
+
+           let assignedRole = 'employee';
+           let assignedDept = null;
+           let isInvited = false;
+
+           if (!invError && invitation) {
+              assignedRole = invitation.role;
+              assignedDept = invitation.department_id;
+              isInvited = true;
+           }
+
+           // Enforce domain restriction for auto-creation, IF NOT INVITED
+           if (!isInvited && currentUser.app_metadata?.provider === 'google') {
              if (!currentUser.email?.endsWith('@malungon.gov.ph')) {
-               toast.error('Only @malungon.gov.ph accounts are allowed.');
+               toast.error('Only @malungon.gov.ph accounts are allowed unless pre-assigned.');
                await supabase.auth.signOut();
                setUser(null);
                setSession(null);
@@ -88,6 +105,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
              }
            }
 
+           if (currentUser.email === 'systems@malungon.gov.ph') {
+              assignedRole = 'system_admin';
+           }
+
            // Create fallback profile
            const { data: newProfile, error: insertError } = await supabase
              .from('profiles')
@@ -95,7 +116,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 id: currentUser.id,
                 email: currentUser.email || '',
                 full_name: currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || 'New User',
-                role: currentUser.email === 'systems@malungon.gov.ph' ? 'system_admin' : 'employee',
+                role: assignedRole,
+                department_id: assignedDept,
                 status: 'active'
              })
              .select()
@@ -106,6 +128,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               toast.error('Your profile was not found and could not be created automatically. Make sure the database schema is fully deployed.');
            } else {
               setProfile(newProfile);
+              if (isInvited) {
+                 await supabase.from('user_invitations').delete().eq('id', invitation.id);
+              }
            }
         } else {
           throw error;
