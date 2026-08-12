@@ -73,7 +73,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     try {
       const [ticketsRes, assetsRes, officesRes, usersRes] = await Promise.all([
         supabase.from('tickets').select('*, ticket_comments(*)').order('created_at', { ascending: false }),
-        supabase.from('assets').select('*, asset_history(*)').order('created_at', { ascending: false }),
+        supabase.from('assets').select('*').order('created_at', { ascending: false }),
         supabase.from('departments').select('*').order('name'),
         supabase.from('profiles').select('*')
       ]);
@@ -166,15 +166,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const { error } = await supabase.from('tickets').insert(mapTicketToDB(ticketToSave));
       if (error) throw error;
       
-      if (ticket.assetId && currentUser) {
-        await supabase.from('asset_history').insert({
-          asset_id: ticket.assetId,
-          action: 'Ticket Created',
-          changes: `A new ticket was created for this asset: ${ticket.subject}`,
-          performed_by: currentUser.id
-        });
-      }
-
       fetchData();
     } catch (error: any) {
       toast.error('Failed to create ticket: ' + error.message);
@@ -209,13 +200,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       
       if (status === 'RESOLVED' || status === 'CLOSED') {
         const ticket = tickets.find(t => t.id === ticketId);
-        if (ticket && ticket.assetId && currentUser) {
-          await supabase.from('asset_history').insert({
-            asset_id: ticket.assetId,
-            action: `Ticket ${status === 'RESOLVED' ? 'Resolved' : 'Closed'}`,
-            changes: `Ticket #${ticket.ticketNumber} was ${status.toLowerCase()}.${ticket.ictRecommendation ? `\n\nICT Action / Recommendation:\n${ticket.ictRecommendation}` : ''}`,
-            performed_by: currentUser.id
-          });
+        if (ticket) {
+          // Note: asset_history has been removed
         }
       }
       
@@ -323,14 +309,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           }
         }
         
-        if (changesStr) {
-          await supabase.from('asset_history').insert({
-            asset_id: id,
-            action: 'Equipment Updated',
-            changes: changesStr,
-            performed_by: currentUser.id
-          });
-        }
+        // Note: asset_history has been removed
+        
       }
       
       fetchData();
