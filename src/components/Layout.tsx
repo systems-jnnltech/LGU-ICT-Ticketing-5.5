@@ -38,7 +38,7 @@ export function Layout({ children, currentTab, setCurrentTab }: { children: Reac
       {/* MOBILE OVERLAY */}
       {isMobileOpen && (
         <div 
-          className="fixed inset-0 bg-black/50 z-30 md:hidden transition-opacity" 
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 md:hidden transition-opacity" 
           onClick={() => setIsMobileOpen(false)}
         />
       )}
@@ -47,27 +47,33 @@ export function Layout({ children, currentTab, setCurrentTab }: { children: Reac
       <aside className={`
         fixed md:relative z-40 h-full
         transition-all duration-300 ease-in-out 
-        ${isCollapsed ? 'md:w-[80px]' : 'md:w-[240px]'} 
-        ${isMobileOpen ? 'translate-x-0 w-[240px]' : '-translate-x-full md:translate-x-0'}
-        bg-bg border-r border-border flex flex-col py-6
+        ${isCollapsed ? 'md:w-[88px]' : 'md:w-[280px]'} 
+        ${isMobileOpen ? 'translate-x-0 w-[280px]' : '-translate-x-full md:translate-x-0'}
+        bg-surface border-r border-border flex flex-col py-8 shadow-[4px_0_24px_rgba(0,0,0,0.02)]
       `}>
-        <div className={`flex items-center mb-8 px-4 ${isCollapsed && !isMobileOpen ? 'md:justify-center' : 'justify-between'}`}>
-          <div className="flex items-center gap-3 overflow-hidden">
-            <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center">
-              <img src="/LGU_LOGO1.png" alt="LGU Logo" className="w-full h-full object-contain" />
+        <div className={`flex items-center mb-10 px-6 ${isCollapsed && !isMobileOpen ? 'md:justify-center px-0' : 'justify-between'}`}>
+          <div className="flex items-center gap-4 overflow-hidden">
+            <div className="w-12 h-12 flex-shrink-0 flex items-center justify-center bg-bg rounded-xl border border-border shadow-sm">
+              <img src="/LGU_LOGO1.png" alt="LGU Logo" className="w-8 h-8 object-contain" />
             </div>
-            {(!isCollapsed || isMobileOpen) && <span className="font-bold text-sm text-ink whitespace-nowrap">ICT Ticketing</span>}
+            {(!isCollapsed || isMobileOpen) && (
+              <div className="flex flex-col whitespace-nowrap">
+                <span className="font-black text-sm text-ink tracking-tight">LGU Terminal</span>
+                <span className="text-[9px] font-bold text-accent uppercase tracking-widest">ICT Division</span>
+              </div>
+            )}
           </div>
           <button 
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className={`hidden md:block p-1.5 rounded-lg text-ink-muted hover:text-accent hover:bg-accent/10 transition-colors ${isCollapsed ? 'absolute -right-3.5 bg-surface border border-border rounded-full shadow-sm' : ''}`}
-            style={isCollapsed ? { top: '32px' } : {}}
+            className={`hidden md:flex items-center justify-center p-2 rounded-xl text-ink-muted hover:text-accent hover:bg-accent/10 transition-all ${isCollapsed ? 'absolute -right-4 bg-surface border border-border rounded-full shadow-md w-8 h-8' : ''}`}
+            style={isCollapsed ? { top: '40px' } : {}}
             title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-5 h-5" />}
           </button>
         </div>
-        <nav className="flex flex-col gap-2 px-3">
+        
+        <nav className="flex flex-col gap-2.5 px-4 overflow-y-auto overflow-x-hidden flex-1 scrollbar-hide">
           {navItems.map(item => (
             <div
               key={item.id}
@@ -78,83 +84,88 @@ export function Layout({ children, currentTab, setCurrentTab }: { children: Reac
                   setIsMobileOpen(false);
                 }
               }}
-              className={`relative flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-colors ${
+              className={`relative flex items-center gap-4 p-3.5 rounded-xl cursor-pointer transition-all ${
                 currentTab === item.id 
-                  ? 'text-accent bg-accent/10' 
-                  : item.disabled ? 'text-ink-muted/50 cursor-not-allowed' : 'text-ink-muted hover:text-accent hover:bg-accent/10'
+                  ? 'text-accent bg-accent/10 border border-accent/20 shadow-sm' 
+                  : item.disabled ? 'text-ink-muted/50 cursor-not-allowed' : 'text-ink-muted border border-transparent hover:text-accent hover:bg-bg'
               }`}
             >
-              <item.icon className="w-5 h-5 flex-shrink-0" style={isCollapsed && !isMobileOpen ? { margin: '0 auto' } : {}} />
+              <item.icon className={`w-5 h-5 flex-shrink-0 ${currentTab === item.id ? 'text-accent' : ''}`} style={isCollapsed && !isMobileOpen ? { margin: '0 auto' } : {}} />
               {(!isCollapsed || isMobileOpen) && (
                 <div className="flex items-center justify-between w-full overflow-hidden">
-                  <span className="font-medium text-sm whitespace-nowrap overflow-hidden">{item.label}</span>
+                  <span className={`text-[13px] whitespace-nowrap overflow-hidden ${currentTab === item.id ? 'font-bold' : 'font-medium'}`}>{item.label}</span>
                   {item.badge !== undefined && (
-                    <span className="bg-accent text-white text-[10px] font-bold px-2 py-0.5 rounded-full ml-auto">
+                    <span className="bg-accent text-white text-[10px] font-bold px-2 py-0.5 rounded-md ml-auto shadow-sm">
                       {item.badge}
                     </span>
                   )}
                 </div>
               )}
               {isCollapsed && !isMobileOpen && item.badge !== undefined && (
-                <span className="absolute top-1 right-1 flex h-3 w-3 items-center justify-center rounded-full bg-accent text-[8px] font-bold text-white shadow-sm ring-2 ring-bg">
+                <span className="absolute top-2 right-2 flex h-4 w-4 items-center justify-center rounded-md bg-accent text-[9px] font-bold text-white shadow-sm ring-2 ring-surface">
                   {item.badge > 99 ? '99+' : item.badge}
                 </span>
               )}
             </div>
           ))}
         </nav>
-        <div className="mt-auto flex flex-col gap-4 px-3 items-center">
-          <div className={`flex items-center gap-3 p-2 w-full ${isCollapsed && !isMobileOpen ? 'justify-center' : 'bg-surface/50 rounded-xl border border-border/50 shadow-sm'}`}>
-            <div className="w-8 h-8 flex-shrink-0 rounded-full bg-border border border-accent flex items-center justify-center text-[10px] font-bold text-ink">
+
+        <div className="mt-auto flex flex-col gap-4 px-4 pt-6">
+          <div className={`flex items-center gap-3 p-3 w-full transition-all ${isCollapsed && !isMobileOpen ? 'justify-center' : 'bg-bg rounded-2xl border border-border shadow-sm'}`}>
+            <div className="w-10 h-10 flex-shrink-0 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center text-[13px] font-bold text-accent shadow-sm">
               {currentUser.name.substring(0, 2).toUpperCase()}
             </div>
             {(!isCollapsed || isMobileOpen) && (
               <div className="flex-1 overflow-hidden">
-                <div className="text-xs font-semibold text-ink truncate">{currentUser.name}</div>
-                <div className="text-[10px] text-ink-muted truncate">{currentUser.role}</div>
+                <div className="text-[13px] font-bold text-ink truncate">{currentUser.name}</div>
+                <div className="text-[10px] text-ink-muted font-bold uppercase tracking-widest mt-0.5 truncate">{currentUser.role}</div>
               </div>
             )}
           </div>
           <div 
-            className={`flex items-center gap-3 p-2.5 w-full rounded-lg cursor-pointer text-ink-muted hover:text-accent hover:bg-accent/10 transition-colors ${isCollapsed && !isMobileOpen ? 'justify-center' : ''}`}
+            className={`flex items-center gap-3 p-3.5 w-full rounded-xl cursor-pointer text-ink-muted hover:text-red-500 hover:bg-red-500/10 transition-all ${isCollapsed && !isMobileOpen ? 'justify-center' : ''}`}
             title="Sign Out"
             onClick={logout}
           >
             <LogOut className="w-5 h-5 flex-shrink-0" style={isCollapsed && !isMobileOpen ? { margin: '0 auto' } : {}} />
-            {(!isCollapsed || isMobileOpen) && <span className="font-medium text-sm whitespace-nowrap">Sign Out</span>}
+            {(!isCollapsed || isMobileOpen) && <span className="font-bold text-[13px] whitespace-nowrap">Sign Out</span>}
           </div>
         </div>
       </aside>
 
       {/* MAIN CONTENT */}
-      <main className="flex-1 flex flex-col min-w-0 overflow-hidden w-full">
-        <header className="border-b border-border px-4 md:px-8 h-16 flex items-center justify-between bg-surface flex-shrink-0">
-          <div className="flex items-center gap-2 md:gap-3">
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden w-full relative">
+        <header className="border-b border-border px-6 md:px-10 h-20 flex items-center justify-between bg-surface/80 backdrop-blur-md flex-shrink-0 z-20 sticky top-0">
+          <div className="flex items-center gap-4">
             <button 
-              className="md:hidden p-1.5 -ml-2 text-ink-muted hover:text-accent hover:bg-accent/10 rounded-lg transition-colors"
+              className="md:hidden p-2 -ml-2 text-ink-muted hover:text-accent hover:bg-accent/10 rounded-xl transition-all"
               onClick={() => setIsMobileOpen(true)}
             >
-              <Menu className="w-5 h-5" />
+              <Menu className="w-6 h-6" />
             </button>
-            <div className="font-mono text-[10px] md:text-xs text-ink-muted flex gap-1 md:gap-2">
-              <span className="hidden sm:inline">System / </span>{currentTab.charAt(0).toUpperCase() + currentTab.slice(1)} / <span className="text-ink font-medium">Overview</span>
+            <div className="font-mono text-[10px] md:text-[11px] font-bold uppercase tracking-widest text-ink-muted flex items-center gap-2">
+              <span className="hidden sm:inline">System</span> 
+              <span className="hidden sm:inline text-border">/</span> 
+              <span className="text-ink">{currentTab}</span> 
+              <span className="text-border">/</span> 
+              <span className="text-ink">Overview</span>
             </div>
           </div>
-          <div className="flex items-center gap-3 md:gap-4 text-[10px] md:text-[11px] font-mono">
+          <div className="flex items-center gap-4">
             <button 
               onClick={toggleTheme}
-              className="p-1.5 md:p-2 text-ink-muted hover:text-accent hover:bg-accent/10 rounded-lg transition-colors"
+              className="p-2.5 text-ink-muted bg-bg border border-border hover:text-accent hover:border-accent/50 rounded-xl transition-all shadow-sm"
               title="Toggle Theme"
             >
-              {theme === 'dark' ? <Sun className="w-4 h-4 md:w-4 md:h-4" /> : <Moon className="w-4 h-4 md:w-4 md:h-4" />}
+              {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
-            <div className="flex items-center gap-1.5 md:gap-2 whitespace-nowrap">
-              <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-green-400 rounded-full"></div>
-              <span className="hidden sm:inline">LIVE SERVER</span>
+            <div className="flex items-center gap-2 bg-bg border border-border px-3 py-2 rounded-xl shadow-sm">
+              <div className="w-2 h-2 bg-green-500 rounded-full shadow-[0_0_8px_rgba(34,197,94,0.5)]"></div>
+              <span className="hidden sm:inline text-[10px] font-bold uppercase tracking-widest text-ink">Live Server</span>
             </div>
           </div>
         </header>
-        <div className="p-4 md:p-8 overflow-y-auto flex-1 bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.05),transparent)]">
+        <div className="p-6 md:p-10 overflow-y-auto flex-1 bg-bg bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-surface/50 via-bg to-bg relative z-10">
           {children}
         </div>
       </main>
