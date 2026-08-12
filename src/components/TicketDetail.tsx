@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAppContext } from '../store/AppContext';
-import { ArrowLeft, Clock, User, Monitor, AlertCircle, CheckCircle2, Send, Activity } from 'lucide-react';
+import { ArrowLeft, Clock, User, Monitor, AlertCircle, CheckCircle2, Send, Activity, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { getTicketSLA } from '../utils/sla';
 import { Toast, ConfirmModal } from '../lib/toast';
@@ -118,14 +118,6 @@ Notes: ${referralData.notes}`;
     Toast.fire({ icon: 'success', title: 'Recommendation added' });
   };
 
-  const inProgressCountHistory = ticket.statusHistory?.filter(h => h.status === 'IN PROGRESS').length || 0;
-  const inProgressCountComments = ticket.comments?.filter(c => c.text === 'System: Status changed to IN PROGRESS').length || 0;
-  const inProgressCount = Math.max(inProgressCountHistory, inProgressCountComments, 1);
-  const occurrences = (ticket.ictRecommendation || '').match(/Taken \d+:/g)?.length || 0;
-  const maxIctRecommendations = inProgressCount;
-  const canAddRecommendationIct = currentUser?.role === 'ICT Support' && ticket.assignedToId === currentUser.id && ticket.status === 'IN PROGRESS' && occurrences < maxIctRecommendations;
-  const canAddRecommendationAdmin = currentUser?.role === 'Admin' && ['ESCALATED', 'REFERRED'].includes(ticket.status) && occurrences < 3;
-
   return (
     <div className="space-y-8 max-w-[1600px] mx-auto pb-16">
       <header className="flex flex-col gap-2">
@@ -203,7 +195,7 @@ Notes: ${referralData.notes}`;
                         <CheckCircle2 className="w-4 h-4" />
                         ICT Action / Recommendation
                       </h3>
-                      {(canAddRecommendationIct || canAddRecommendationAdmin) && !isEditingRecommendation && (
+                      {!isEditingRecommendation && (
                           <button 
                               onClick={() => {
                                   setRecommendationText('');
@@ -322,7 +314,7 @@ Notes: ${referralData.notes}`;
                               type="text"
                               value={newCommentText}
                               onChange={(e) => setNewCommentText(e.target.value)}
-                              placeholder="Type a message..."
+                              placeholder="Type a message or update..."
                               className="flex-1 bg-surface border border-border rounded-xl pl-5 pr-14 py-3.5 text-sm font-medium outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent shadow-sm"
                           />
                           <button 
@@ -640,51 +632,65 @@ Notes: ${referralData.notes}`;
 
       {/* Referral Modal */}
       {showReferralModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden border border-border">
-            <div className="px-8 py-5 border-b border-border flex justify-between items-center bg-bg/50">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6 bg-black/60 backdrop-blur-sm">
+          <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-xl border border-border flex flex-col max-h-[95vh] overflow-hidden">
+            
+            {/* Modal Header */}
+            <div className="px-6 py-5 md:px-8 border-b border-border flex justify-between items-center bg-bg/50 shrink-0">
               <h3 className="font-bold text-[13px] text-ink uppercase tracking-widest">Assess & Refer Externally</h3>
-              <button onClick={() => setShowReferralModal(false)} className="text-ink-muted hover:text-ink transition-colors p-1"><AlertCircle className="w-5 h-5 opacity-0"/></button>
+              <button 
+                type="button" 
+                onClick={() => setShowReferralModal(false)} 
+                className="text-ink-muted hover:text-ink hover:bg-border p-2 rounded-xl transition-colors -mr-2"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
-            <form onSubmit={handleReferralSubmit} className="p-8 space-y-6">
-              <div className="space-y-2">
-                <label className="block text-[10px] font-bold uppercase tracking-widest text-ink-muted">Reason</label>
-                <input required type="text" value={referralData.reason} onChange={e => setReferralData({...referralData, reason: e.target.value})} className="w-full px-4 py-3 bg-bg border border-border rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 shadow-sm transition-all" />
-              </div>
-              <div className="space-y-2">
-                <label className="block text-[10px] font-bold uppercase tracking-widest text-ink-muted">Service Provider</label>
-                <input required type="text" value={referralData.serviceProvider} onChange={e => setReferralData({...referralData, serviceProvider: e.target.value})} className="w-full px-4 py-3 bg-bg border border-border rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 shadow-sm transition-all" placeholder="e.g. Dell Service Center" />
-              </div>
-              <div className="grid grid-cols-2 gap-6">
+            
+            {/* Modal Body & Form */}
+            <form onSubmit={handleReferralSubmit} className="flex flex-col overflow-hidden">
+              <div className="p-6 md:p-8 space-y-6 overflow-y-auto">
                 <div className="space-y-2">
-                  <label className="block text-[10px] font-bold uppercase tracking-widest text-ink-muted">Contact Person</label>
-                  <input type="text" value={referralData.contactPerson} onChange={e => setReferralData({...referralData, contactPerson: e.target.value})} className="w-full px-4 py-3 bg-bg border border-border rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 shadow-sm transition-all" />
+                  <label className="block text-[10px] font-bold uppercase tracking-widest text-ink-muted">Reason</label>
+                  <input required type="text" value={referralData.reason} onChange={e => setReferralData({...referralData, reason: e.target.value})} className="w-full px-4 py-3 bg-bg border border-border rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 shadow-sm transition-all" />
                 </div>
                 <div className="space-y-2">
-                  <label className="block text-[10px] font-bold uppercase tracking-widest text-ink-muted">Contact No.</label>
-                  <input type="text" value={referralData.contactNo} onChange={e => setReferralData({...referralData, contactNo: e.target.value})} className="w-full px-4 py-3 bg-bg border border-border rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 shadow-sm transition-all" />
+                  <label className="block text-[10px] font-bold uppercase tracking-widest text-ink-muted">Service Provider</label>
+                  <input required type="text" value={referralData.serviceProvider} onChange={e => setReferralData({...referralData, serviceProvider: e.target.value})} className="w-full px-4 py-3 bg-bg border border-border rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 shadow-sm transition-all" placeholder="e.g. Dell Service Center" />
                 </div>
-              </div>
-              <div className="space-y-2">
-                <label className="block text-[10px] font-bold uppercase tracking-widest text-ink-muted">Reference / Job Order No.</label>
-                <input type="text" value={referralData.referenceNumber} onChange={e => setReferralData({...referralData, referenceNumber: e.target.value})} className="w-full px-4 py-3 bg-bg border border-border rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 shadow-sm transition-all" />
-              </div>
-              <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="block text-[10px] font-bold uppercase tracking-widest text-ink-muted">Contact Person</label>
+                    <input type="text" value={referralData.contactPerson} onChange={e => setReferralData({...referralData, contactPerson: e.target.value})} className="w-full px-4 py-3 bg-bg border border-border rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 shadow-sm transition-all" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="block text-[10px] font-bold uppercase tracking-widest text-ink-muted">Contact No.</label>
+                    <input type="text" value={referralData.contactNo} onChange={e => setReferralData({...referralData, contactNo: e.target.value})} className="w-full px-4 py-3 bg-bg border border-border rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 shadow-sm transition-all" />
+                  </div>
+                </div>
                 <div className="space-y-2">
-                  <label className="block text-[10px] font-bold uppercase tracking-widest text-ink-muted">Date Referred</label>
-                  <input required type="date" value={referralData.dateReferred} onChange={e => setReferralData({...referralData, dateReferred: e.target.value})} className="w-full px-4 py-3 bg-bg border border-border rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 shadow-sm transition-all" />
+                  <label className="block text-[10px] font-bold uppercase tracking-widest text-ink-muted">Reference / Job Order No.</label>
+                  <input type="text" value={referralData.referenceNumber} onChange={e => setReferralData({...referralData, referenceNumber: e.target.value})} className="w-full px-4 py-3 bg-bg border border-border rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 shadow-sm transition-all" />
+                </div>
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="block text-[10px] font-bold uppercase tracking-widest text-ink-muted">Date Referred</label>
+                    <input required type="date" value={referralData.dateReferred} onChange={e => setReferralData({...referralData, dateReferred: e.target.value})} className="w-full px-4 py-3 bg-bg border border-border rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 shadow-sm transition-all" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="block text-[10px] font-bold uppercase tracking-widest text-ink-muted">Expected Return</label>
+                    <input type="date" value={referralData.expectedReturn} onChange={e => setReferralData({...referralData, expectedReturn: e.target.value})} className="w-full px-4 py-3 bg-bg border border-border rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 shadow-sm transition-all" />
+                  </div>
                 </div>
                 <div className="space-y-2">
-                  <label className="block text-[10px] font-bold uppercase tracking-widest text-ink-muted">Expected Return</label>
-                  <input type="date" value={referralData.expectedReturn} onChange={e => setReferralData({...referralData, expectedReturn: e.target.value})} className="w-full px-4 py-3 bg-bg border border-border rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 shadow-sm transition-all" />
+                  <label className="block text-[10px] font-bold uppercase tracking-widest text-ink-muted">Notes</label>
+                  <textarea rows={3} value={referralData.notes} onChange={e => setReferralData({...referralData, notes: e.target.value})} className="w-full px-4 py-3 bg-bg border border-border rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 shadow-sm transition-all resize-none" />
                 </div>
               </div>
-              <div className="space-y-2">
-                <label className="block text-[10px] font-bold uppercase tracking-widest text-ink-muted">Notes</label>
-                <textarea rows={3} value={referralData.notes} onChange={e => setReferralData({...referralData, notes: e.target.value})} className="w-full px-4 py-3 bg-bg border border-border rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 shadow-sm transition-all resize-none" />
-              </div>
-              <div className="pt-6 flex justify-end gap-3 border-t border-border">
-                <button type="button" onClick={() => setShowReferralModal(false)} className="px-6 py-3 border border-border bg-bg text-ink-muted text-[11px] font-bold uppercase tracking-widest hover:text-ink rounded-xl transition-all shadow-sm">Cancel</button>
+              
+              {/* Modal Footer */}
+              <div className="px-6 py-5 md:px-8 border-t border-border shrink-0 bg-bg/50 flex justify-end gap-3">
+                <button type="button" onClick={() => setShowReferralModal(false)} className="px-6 py-3 border border-border bg-surface text-ink-muted text-[11px] font-bold uppercase tracking-widest hover:text-ink rounded-xl transition-all shadow-sm">Cancel</button>
                 <button type="submit" className="px-6 py-3 bg-purple-500 text-white text-[11px] font-bold uppercase tracking-widest rounded-xl hover:opacity-90 shadow-sm transition-all active:scale-95">Confirm Referral</button>
               </div>
             </form>
