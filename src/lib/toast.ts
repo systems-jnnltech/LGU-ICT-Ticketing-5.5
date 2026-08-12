@@ -1,26 +1,21 @@
 import Swal from 'sweetalert2';
-import { toast as sonnerToast } from 'sonner';
 
-export const Toast = {
-  fire: ({ icon, title }: { icon?: 'success' | 'error' | 'warning' | 'info' | 'question', title: string }) => {
-    switch (icon) {
-      case 'success':
-        sonnerToast.success(title);
-        break;
-      case 'error':
-        sonnerToast.error(title);
-        break;
-      case 'warning':
-        sonnerToast.warning(title);
-        break;
-      case 'info':
-      case 'question':
-      default:
-        sonnerToast.info(title);
-        break;
-    }
+export const Toast = Swal.mixin({
+  toast: true,
+  position: 'top-end',
+  showConfirmButton: false,
+  timer: 3000,
+  timerProgressBar: true,
+  background: 'var(--surface)',
+  color: 'var(--ink)',
+  customClass: {
+    popup: 'colored-toast'
+  },
+  didOpen: (toast) => {
+    toast.addEventListener('mouseenter', Swal.stopTimer)
+    toast.addEventListener('mouseleave', Swal.resumeTimer)
   }
-};
+});
 
 export const ConfirmModal = Swal.mixin({
   title: 'Are you sure?',
