@@ -119,15 +119,22 @@ Notes: ${referralData.notes}`;
   };
 
   const inProgressCount = ticket.comments?.filter(c => c.text === 'System: Status changed to IN PROGRESS').length || 0;
+  const escalatedCount = ticket.comments?.filter(c => c.text === 'System: Status changed to ESCALATED').length || 0;
+  const referredCount = ticket.comments?.filter(c => c.text === 'System: Status changed to REFERRED').length || 0;
+  
   const occurrences = (ticket.ictRecommendation || '').match(/Taken \d+:/g)?.length || 0;
-  const allowedRecommendations = Math.max(inProgressCount, ticket.status === 'IN PROGRESS' ? 1 : 0);
+  
+  const totalActionableTransitions = inProgressCount + escalatedCount + referredCount;
+  const isActionable = ['IN PROGRESS', 'ESCALATED', 'REFERRED'].includes(ticket.status);
+  
+  const allowedRecommendations = Math.max(totalActionableTransitions, isActionable ? 1 : 0);
   
   const isAdmin = currentUser?.role === 'Admin';
   const isICTSupport = currentUser?.role === 'ICT Support';
   
-  const hasUnusedCycle = occurrences < allowedRecommendations || (isAdmin && ticket.status === 'ESCALATED');
+  const hasUnusedCycle = occurrences < allowedRecommendations;
   const isAuthorized = (isICTSupport && ticket.assignedToId === currentUser.id) || isAdmin;
-  const canAddRecommendation = isAuthorized && hasUnusedCycle && ['IN PROGRESS', 'ESCALATED', 'REFERRED'].includes(ticket.status);
+  const canAddRecommendation = isAuthorized && hasUnusedCycle && isActionable;
 
   return (
     <div className="space-y-8 max-w-[1600px] mx-auto pb-16">
