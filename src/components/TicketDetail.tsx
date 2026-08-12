@@ -121,8 +121,12 @@ Notes: ${referralData.notes}`;
   const inProgressCount = ticket.comments?.filter(c => c.text === 'System: Status changed to IN PROGRESS').length || 0;
   const occurrences = (ticket.ictRecommendation || '').match(/Taken \d+:/g)?.length || 0;
   const allowedRecommendations = Math.max(inProgressCount, ticket.status === 'IN PROGRESS' ? 1 : 0);
-  const hasUnusedCycle = occurrences < allowedRecommendations;
-  const isAuthorized = (currentUser?.role === 'ICT Support' && ticket.assignedToId === currentUser.id) || (currentUser?.role === 'Admin');
+  
+  const isAdmin = currentUser?.role === 'Admin';
+  const isICTSupport = currentUser?.role === 'ICT Support';
+  
+  const hasUnusedCycle = occurrences < allowedRecommendations || (isAdmin && ticket.status === 'ESCALATED');
+  const isAuthorized = (isICTSupport && ticket.assignedToId === currentUser.id) || isAdmin;
   const canAddRecommendation = isAuthorized && hasUnusedCycle && ['IN PROGRESS', 'ESCALATED', 'REFERRED'].includes(ticket.status);
 
   return (
