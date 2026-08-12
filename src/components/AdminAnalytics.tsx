@@ -267,7 +267,7 @@ export function AdminAnalytics() {
             <div className="w-2 h-4 bg-accent rounded-[1px]"></div>
             <h3 className="text-[11px] font-bold uppercase tracking-widest text-ink">Tickets by Status</h3>
           </div>
-          <div className="p-6 h-72 flex-1">
+          <div className="p-6 h-[300px] min-h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -297,7 +297,7 @@ export function AdminAnalytics() {
             <div className="w-2 h-4 bg-purple-400 rounded-[1px]"></div>
             <h3 className="text-[11px] font-bold uppercase tracking-widest text-ink">Active SLA Status</h3>
           </div>
-          <div className="p-6 h-72 flex-1">
+          <div className="p-6 h-[300px] min-h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -327,7 +327,7 @@ export function AdminAnalytics() {
             <div className="w-2 h-4 bg-blue-400 rounded-[1px]"></div>
             <h3 className="text-[11px] font-bold uppercase tracking-widest text-ink">Tickets by Category</h3>
           </div>
-          <div className="p-6 h-80 flex-1">
+          <div className="p-6 h-[320px] min-h-[320px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={categoryData} margin={{ top: 20, right: 10, left: -20, bottom: 0 }}>
                 <XAxis dataKey="name" stroke="#71717a" fontSize={11} fontWeight={600} tickLine={false} axisLine={false} dy={10} />
@@ -345,7 +345,7 @@ export function AdminAnalytics() {
             <div className="w-2 h-4 bg-orange-400 rounded-[1px]"></div>
             <h3 className="text-[11px] font-bold uppercase tracking-widest text-ink">Tickets by Priority</h3>
           </div>
-          <div className="p-6 h-80 flex-1">
+          <div className="p-6 h-[320px] min-h-[320px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={priorityData} margin={{ top: 20, right: 10, left: -20, bottom: 0 }}>
                 <XAxis dataKey="name" stroke="#71717a" fontSize={11} fontWeight={600} tickLine={false} axisLine={false} dy={10} />
