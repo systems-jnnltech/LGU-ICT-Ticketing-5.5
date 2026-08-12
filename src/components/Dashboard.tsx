@@ -215,21 +215,30 @@ export function Dashboard({ onViewTicket }: { onViewTicket?: (id: string) => voi
                 }
 
                 return (
-                  <div key={staff.id} className={`bg-surface p-6 rounded-2xl border border-border shadow-sm flex flex-col justify-between h-full ${cardClass}`}>
-                    <div>
-                      <div className="flex flex-wrap justify-between items-start gap-2 mb-4">
+                  <div key={staff.id} className={`bg-surface p-5 rounded-2xl border border-border shadow-sm flex flex-col justify-between h-full relative overflow-hidden group ${cardClass}`}>
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-border to-transparent opacity-50"></div>
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-bg border border-border flex items-center justify-center font-bold text-[12px] text-ink shadow-sm">
                           {staff.name.split(' ').map(n => n[0]).join('').substring(0, 2)}
                         </div>
-                        <div className={`${statusClass} border text-[9px] font-bold px-2 py-1 rounded-md uppercase tracking-widest whitespace-nowrap`}>
-                          {statusLabel}
+                        <div>
+                          <p className="text-[11px] font-bold uppercase tracking-widest text-ink truncate max-w-[100px]" title={staff.name}>{staff.name}</p>
+                          <p className="text-[10px] text-ink-muted font-medium mt-0.5">ICT Support</p>
                         </div>
                       </div>
-                      <p className="text-[11px] font-bold uppercase tracking-widest text-ink mb-1">{staff.name}</p>
                     </div>
-                    <p className={`text-3xl font-black tracking-tighter mt-4 ${active >= 6 ? 'text-red-500' : 'text-ink'}`}>
-                      {active} <span className="text-[10px] font-bold uppercase tracking-widest text-ink-muted">Active</span>
-                    </p>
+                    <div className="mt-auto pt-4 border-t border-border flex justify-between items-end">
+                      <div>
+                        <p className={`text-3xl font-black tracking-tighter leading-none ${active >= 6 ? 'text-red-500' : 'text-ink'}`}>
+                          {active}
+                        </p>
+                        <p className="text-[9px] font-bold uppercase tracking-widest text-ink-muted mt-1.5">Active Tasks</p>
+                      </div>
+                      <div className={`${statusClass} border text-[9px] font-bold px-2.5 py-1 rounded-md uppercase tracking-widest whitespace-nowrap shadow-sm mb-1`}>
+                        {statusLabel}
+                      </div>
+                    </div>
                   </div>
                 );
               })}
