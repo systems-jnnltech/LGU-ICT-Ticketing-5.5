@@ -106,7 +106,8 @@ export function TicketsList({ onSelectTicket, onCreateTicket }: { onSelectTicket
            </div>
         </div>
 
-        <table className="w-full text-left">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left min-w-[800px]">
           <thead className="bg-surface/5 border-b border-border">
             <tr className="text-[10px] text-ink-muted uppercase font-bold font-mono">
               <th className="px-4 py-3">Ticket ID & Subject</th>
@@ -181,6 +182,7 @@ export function TicketsList({ onSelectTicket, onCreateTicket }: { onSelectTicket
             )}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );
