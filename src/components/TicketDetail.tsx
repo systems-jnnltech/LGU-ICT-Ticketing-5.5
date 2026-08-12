@@ -636,7 +636,7 @@ Notes: ${referralData.notes}`;
                                             if (confirmResult.isConfirmed) {
                                                 if (attempts >= 2) {
                                                     changeTicketStatus(ticket.id, 'ESCALATED', ticket.assignedToId);
-                                                    addComment(ticket.id, `${reportText}\n\nAction: Escalated ticket (Problem still exists after multiple attempts)`);
+                                                    addComment(ticket.id, `${reportText}\n\nAction: Ticket escalated to ICT Head after two unsuccessful resolution attempts.`);
                                                     Toast.fire({ icon: 'success', title: 'Ticket Escalated' });
                                                 } else {
                                                     changeTicketStatus(ticket.id, 'IN PROGRESS', ticket.assignedToId);
