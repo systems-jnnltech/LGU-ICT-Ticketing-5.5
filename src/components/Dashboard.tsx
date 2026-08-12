@@ -1,10 +1,11 @@
 import React from 'react';
+import { formatDistanceToNow } from 'date-fns';
 import { useAppContext } from '../store/AppContext';
 import { Ticket } from '../store/mockData';
 import { getTicketSLA } from '../utils/sla';
 
-export function Dashboard() {
-  const { tickets, assets, users, currentUser } = useAppContext();
+export function Dashboard({ onViewTicket }: { onViewTicket?: (id: string) => void }) {
+  const { tickets, assets, users, currentUser, offices, categories } = useAppContext();
 
   let displayedTickets = tickets;
   let displayedAssets = assets;
@@ -42,6 +43,21 @@ export function Dashboard() {
     </div>
   );
 
+
+  // Escalated Tickets
+  const escalatedTickets = displayedTickets.filter(t => t.status === 'ESCALATED' || t.status === 'REFERRED');
+  const totalEscalated = escalatedTickets.length;
+  const awaitingIctHead = escalatedTickets.filter(t => t.status === 'ESCALATED').length;
+  const externalCount = escalatedTickets.filter(t => t.status === 'REFERRED').length;
+
+  const getEscalatedTime = (ticket: Ticket) => {
+    const escalatedEvent = ticket.statusHistory?.slice().reverse().find(h => h.status === 'ESCALATED' || h.status === 'REFERRED');
+    if (escalatedEvent) {
+      return formatDistanceToNow(new Date(escalatedEvent.timestamp), { addSuffix: true });
+    }
+    return formatDistanceToNow(new Date(ticket.updatedAt || new Date()), { addSuffix: true });
+  };
+
   // SLA Tickets
   const activeTickets = displayedTickets.filter(t => !['RESOLVED', 'CLOSED', 'REFERRED'].includes(t.status));
   const ticketsNearSLA = activeTickets
@@ -66,6 +82,64 @@ export function Dashboard() {
 
       <div className="grid grid-cols-12 gap-6">
         <div className="col-span-12 xl:col-span-8 space-y-6">
+          
+          {/* Escalated Tickets Section */}
+          {currentUser?.role !== 'Department User' && escalatedTickets.length > 0 && (
+            <div className="bg-red-500/5 rounded-xl shadow-sm border border-red-500/20 overflow-hidden mb-6">
+              <div className="p-4 border-b border-red-500/20 flex items-center gap-2">
+                <span className="text-lg">🚨</span>
+                <h2 className="font-bold text-sm text-red-500 uppercase tracking-wider">
+                  Escalated Tickets
+                </h2>
+              </div>
+              
+              <div className="grid grid-cols-3 divide-x divide-red-500/20 border-b border-red-500/20 bg-red-500/5 p-4 text-center">
+                <div>
+                  <p className="text-xs font-medium text-ink-muted mb-1">Total Escalated</p>
+                  <p className="text-xl font-bold text-ink">{totalEscalated}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-ink-muted mb-1">Awaiting ICT Head</p>
+                  <p className="text-xl font-bold text-ink">{awaitingIctHead}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-ink-muted mb-1">External</p>
+                  <p className="text-xl font-bold text-ink">{externalCount} Technician{externalCount !== 1 ? 's' : ''}</p>
+                </div>
+              </div>
+
+              <table className="w-full text-left">
+                <thead className="bg-red-500/10 border-b border-red-500/20">
+                  <tr className="text-[10px] text-red-500 uppercase font-bold font-mono">
+                    <th className="px-4 py-3">Ticket</th>
+                    <th className="px-4 py-3">Office</th>
+                    <th className="px-4 py-3">Issue</th>
+                    <th className="px-4 py-3">Escalated</th>
+                    <th className="px-4 py-3">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="text-xs">
+                  {escalatedTickets.map(ticket => (
+                    <tr key={ticket.id} className="border-b border-red-500/10 hover:bg-red-500/10 transition-colors">
+                      <td className="px-4 py-3 font-bold font-mono text-ink">{ticket.ticketNumber}</td>
+                      <td className="px-4 py-3 text-ink truncate max-w-[120px]">{offices.find(o => o.id === ticket.officeId)?.name || 'Unknown'}</td>
+                      <td className="px-4 py-3 text-ink truncate max-w-[150px]">{ticket.subject}</td>
+                      <td className="px-4 py-3 text-ink-muted">{getEscalatedTime(ticket)}</td>
+                      <td className="px-4 py-3">
+                        <button 
+                          onClick={() => onViewTicket && onViewTicket(ticket.id)}
+                          className="px-3 py-1 bg-surface border border-border rounded text-xs font-medium text-ink hover:bg-surface/80 transition-colors"
+                        >
+                          View
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
           <div className="bg-surface rounded-xl shadow-sm border border-border overflow-hidden">
             <div className="p-4 border-b border-border flex items-center justify-between">
               <h2 className="font-bold text-sm text-ink flex items-center gap-2">
