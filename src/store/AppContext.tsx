@@ -52,6 +52,40 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     officeId: profile.department_id || undefined
   } : null;
 
+  const [awayChecked, setAwayChecked] = useState(false);
+
+  useEffect(() => {
+    if (currentUser && tickets.length > 0 && !awayChecked) {
+      setAwayChecked(true);
+      const lastLogoutStr = localStorage.getItem(`last_logout_${currentUser.id}`);
+      if (lastLogoutStr) {
+        const lastLogout = new Date(lastLogoutStr).getTime();
+        const recentTickets = tickets.filter(t => new Date(t.updatedAt).getTime() > lastLogout);
+        
+        if (recentTickets.length > 0) {
+          setTimeout(() => {
+            if (currentUser.role === 'Admin') {
+              toast.info(`While you were away: ${recentTickets.length} tickets were updated.`, { duration: 5000 });
+            } else if (currentUser.role === 'ICT Support') {
+              const assignedToMe = recentTickets.filter(t => t.assignedToId === currentUser.id);
+              if (assignedToMe.length > 0) {
+                toast.info(`While you were away: ${assignedToMe.length} of your assigned tickets were updated.`, { duration: 5000 });
+              } else {
+                toast.info(`While you were away: ${recentTickets.length} tickets were updated.`, { duration: 5000 });
+              }
+            } else {
+              const myTickets = recentTickets.filter(t => t.officeId === currentUser.officeId);
+              if (myTickets.length > 0) {
+                toast.info(`While you were away: ${myTickets.length} of your department's tickets were updated.`, { duration: 5000 });
+              }
+            }
+          }, 1000);
+        }
+        localStorage.removeItem(`last_logout_${currentUser.id}`);
+      }
+    }
+  }, [currentUser, tickets, awayChecked]);
+
   useEffect(() => {
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
