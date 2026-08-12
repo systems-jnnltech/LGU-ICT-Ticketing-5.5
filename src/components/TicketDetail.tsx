@@ -5,15 +5,18 @@ import { format } from 'date-fns';
 import { getTicketSLA } from '../utils/sla';
 import { Toast, ConfirmModal } from '../lib/toast';
 import Swal from 'sweetalert2';
+import { DispatchFormModal } from './DispatchFormModal';
 
 export function TicketDetail({ ticketId, onBack }: { ticketId: string, onBack: () => void }) {
-  const { tickets, users, assets, categories, currentUser, changeTicketStatus, updateTicketPriority, addComment, updateRecommendation } = useAppContext();
+  const { tickets, users, assets, offices, categories, currentUser, changeTicketStatus, updateTicketPriority, addComment, updateRecommendation } = useAppContext();
   const ticket = tickets.find(t => t.id === ticketId);
+  const department = offices.find(o => o.id === ticket?.officeId);
   
   const [selectedAssignee, setSelectedAssignee] = useState(ticket?.assignedToId || '');
   const [newCommentText, setNewCommentText] = useState('');
   const [recommendationText, setRecommendationText] = useState('');
   const [isEditingRecommendation, setIsEditingRecommendation] = useState(false);
+  const [showDispatchModal, setShowDispatchModal] = useState(false);
   const [showReferralModal, setShowReferralModal] = useState(false);
   const [referralData, setReferralData] = useState({
     reason: 'Hardware repair requires specialized technician',
@@ -486,13 +489,7 @@ Notes: ${referralData.notes}`;
                                         <button onClick={() => {
                                             const referralComment = ticket.comments?.find(c => c.text.startsWith('Referred to External Technician'));
                                             if (referralComment) {
-                                                Swal.fire({
-                                                    title: 'External Technician Details',
-                                                    html: `<div class="text-left text-sm whitespace-pre-wrap font-sans mt-4 bg-bg p-4 rounded-xl border border-border text-ink">${referralComment.text}</div>`,
-                                                    confirmButtonColor: '#f97316',
-                                                    confirmButtonText: 'Close',
-                                                    customClass: { popup: 'rounded-2xl', title: 'font-bold' }
-                                                });
+                                                setShowDispatchModal(true);
                                             } else {
                                                 Toast.fire({ icon: 'info', title: 'No technician details found' });
                                             }
@@ -560,13 +557,7 @@ Notes: ${referralData.notes}`;
                                     <button onClick={() => {
                                         const referralComment = ticket.comments?.find(c => c.text.startsWith('Referred to External Technician'));
                                         if (referralComment) {
-                                            Swal.fire({
-                                                title: 'External Technician Details',
-                                                html: `<div class="text-left text-sm whitespace-pre-wrap font-sans mt-4 bg-bg p-4 rounded-xl border border-border text-ink">${referralComment.text}</div>`,
-                                                confirmButtonColor: '#f97316',
-                                                confirmButtonText: 'Close',
-                                                customClass: { popup: 'rounded-2xl', title: 'font-bold' }
-                                            });
+                                            setShowDispatchModal(true);
                                         } else {
                                             Toast.fire({ icon: 'info', title: 'No technician details found' });
                                         }
@@ -692,7 +683,7 @@ Notes: ${referralData.notes}`;
                                             if (confirmResult.isConfirmed) {
                                                 if (attempts >= 2) {
                                                     changeTicketStatus(ticket.id, 'ESCALATED', ticket.assignedToId);
-                                                    addComment(ticket.id, `${reportText}\n\nAction: Escalated ticket (Problem still exists after multiple attempts)`);
+                                                    addComment(ticket.id, `${reportText}\n\nAction: Ticket escalated to ICT Head after two unsuccessful resolution attempts.`);
                                                     Toast.fire({ icon: 'success', title: 'Ticket Escalated' });
                                                 } else {
                                                     changeTicketStatus(ticket.id, 'IN PROGRESS', ticket.assignedToId);
@@ -865,6 +856,17 @@ Notes: ${referralData.notes}`;
             </form>
           </div>
         </div>
+      )}
+
+      {/* Dispatch Form Modal */}
+      {showDispatchModal && ticket && (
+        <DispatchFormModal
+          ticket={ticket}
+          asset={asset}
+          department={department}
+          onClose={() => setShowDispatchModal(false)}
+          onSave={(commentText: string) => addComment(ticket.id, commentText)}
+        />
       )}
     </div>
   );
