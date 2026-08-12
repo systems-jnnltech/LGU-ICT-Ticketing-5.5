@@ -76,43 +76,49 @@ export function CreateAsset({ onBack, assetToEdit }: { onBack: () => void, asset
     });
   };
 
+  // Base input class for premium feel
+  const inputClass = "w-full bg-bg border border-border rounded-xl px-4 py-3 text-sm font-medium outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition-all shadow-sm";
+
   return (
-    <div className="max-w-4xl mx-auto pb-12 space-y-6">
-      <header className="space-y-4">
-        <div className="flex items-start justify-between">
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-accent mb-1">Equipment registry</p>
-            <h1 className="text-2xl font-bold text-ink tracking-tight">{isEditing ? 'Edit equipment record' : 'Register new equipment'}</h1>
-            <p className="text-sm text-ink-muted mt-2 max-w-xl">
-              {isEditing ? 'Update the details for this ICT asset.' : 'Add a new ICT asset to the municipal registry. The registry number will be generated automatically when the record is saved.'}
-            </p>
-          </div>
-          <button onClick={onBack} className="flex items-center space-x-2 px-4 py-2 border border-border text-ink-muted rounded-lg hover:bg-bg text-xs font-bold transition-colors">
-            <ArrowLeft className="w-4 h-4" />
-            <span>Back to equipment</span>
-          </button>
+    <div className="max-w-[1000px] mx-auto pb-16 space-y-8">
+      <header className="space-y-6">
+        <button onClick={onBack} className="flex items-center space-x-2 text-ink-muted hover:text-ink transition-colors text-[11px] font-bold uppercase tracking-widest">
+          <ArrowLeft className="w-4 h-4" />
+          <span>Back to equipment</span>
+        </button>
+        <div className="flex flex-col gap-2">
+          <p className="text-[11px] font-bold uppercase tracking-widest text-accent flex items-center gap-2">
+            <div className="w-1.5 h-1.5 bg-accent rounded-full"></div>
+            Equipment registry
+          </p>
+          <h1 className="text-[2.75rem] font-black text-ink leading-none tracking-tighter">
+            {isEditing ? 'Edit equipment record' : 'Register new equipment'}
+          </h1>
+          <p className="text-sm font-medium text-ink-muted mt-2 max-w-2xl leading-relaxed">
+            {isEditing ? 'Update the details for this ICT asset.' : 'Add a new ICT asset to the municipal registry. The registry number will be generated automatically when the record is saved.'}
+          </p>
         </div>
       </header>
 
       {offices.length === 0 ? (
-        <div className="bg-surface p-8 rounded-2xl border border-border text-center">
-          <h2 className="text-lg font-bold text-ink">No offices available</h2>
-          <p className="text-sm text-ink-muted mt-2">Add at least one active office before registering ICT equipment.</p>
+        <div className="bg-surface p-12 rounded-2xl border border-border text-center shadow-sm">
+          <h2 className="text-xl font-bold text-ink tracking-tight">No offices available</h2>
+          <p className="text-sm font-medium text-ink-muted mt-2">Add at least one active office before registering ICT equipment.</p>
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-8">
           <FormSection
-            title="Registry information"
+            title="Registry Information"
             description="Identify the responsible office and official government inventory references."
-            icon={<Database className="w-5 h-5" />}
+            icon={<Database className="w-6 h-6" />}
           >
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6">
               <FormField label="Asset Code" required>
-                <input name="assetCode" required value={formData.assetCode} onChange={handleChange} placeholder="e.g. ICT-2026-M03-000135" className="w-full bg-surface border border-border rounded-lg px-4 py-2 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent font-mono" />
+                <input name="assetCode" required value={formData.assetCode} onChange={handleChange} placeholder="e.g. ICT-2026-M03-000135" className={`${inputClass} font-mono`} />
               </FormField>
 
               <FormField label="Office" required>
-                <select name="officeId" required value={formData.officeId} onChange={handleChange} className="w-full bg-surface border border-border rounded-lg px-4 py-2 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent">
+                <select name="officeId" required value={formData.officeId} onChange={handleChange} className={`${inputClass} appearance-none cursor-pointer`}>
                   <option value="" disabled>Select office</option>
                   {offices.map(office => (
                     <option key={office.id} value={office.id}>{office.name}</option>
@@ -121,7 +127,7 @@ export function CreateAsset({ onBack, assetToEdit }: { onBack: () => void, asset
               </FormField>
 
               <FormField label="Equipment type" required>
-                <select name="equipmentType" required value={formData.equipmentType} onChange={handleChange} className="w-full bg-surface border border-border rounded-lg px-4 py-2 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent">
+                <select name="equipmentType" required value={formData.equipmentType} onChange={handleChange} className={`${inputClass} appearance-none cursor-pointer`}>
                   <option value="" disabled>Select equipment type</option>
                   <option value="Desktop Computer">Desktop Computer</option>
                   <option value="Laptop Computer">Laptop Computer</option>
@@ -134,88 +140,88 @@ export function CreateAsset({ onBack, assetToEdit }: { onBack: () => void, asset
               </FormField>
 
               <FormField label="Property number">
-                <input name="propertyNumber" value={formData.propertyNumber} onChange={handleChange} placeholder="Government property number" className="w-full bg-surface border border-border rounded-lg px-4 py-2 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent" />
+                <input name="propertyNumber" value={formData.propertyNumber} onChange={handleChange} placeholder="Government property number" className={inputClass} />
               </FormField>
 
               <FormField label="Inventory number">
-                <input name="inventoryNumber" value={formData.inventoryNumber} onChange={handleChange} placeholder="Existing inventory number" className="w-full bg-surface border border-border rounded-lg px-4 py-2 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent" />
+                <input name="inventoryNumber" value={formData.inventoryNumber} onChange={handleChange} placeholder="Existing inventory number" className={inputClass} />
               </FormField>
 
               <div className="md:col-span-2">
                 <FormField label="Serial number">
-                  <input name="serialNumber" value={formData.serialNumber} onChange={handleChange} placeholder="Manufacturer serial number" className="w-full bg-surface border border-border rounded-lg px-4 py-2 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent" />
+                  <input name="serialNumber" value={formData.serialNumber} onChange={handleChange} placeholder="Manufacturer serial number" className={`${inputClass} font-mono`} />
                 </FormField>
               </div>
             </div>
           </FormSection>
 
           <FormSection
-            title="Device information"
+            title="Device Information"
             description="Record the manufacturer, model and technical specifications of the equipment."
-            icon={<Monitor className="w-5 h-5" />}
+            icon={<Monitor className="w-6 h-6" />}
           >
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6">
               <FormField label="Brand">
-                <input name="brand" value={formData.brand} onChange={handleChange} placeholder="Dell, HP, Lenovo" className="w-full bg-surface border border-border rounded-lg px-4 py-2 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent" />
+                <input name="brand" value={formData.brand} onChange={handleChange} placeholder="Dell, HP, Lenovo" className={inputClass} />
               </FormField>
               <FormField label="Model">
-                <input name="model" value={formData.model} onChange={handleChange} placeholder="OptiPlex 7090" className="w-full bg-surface border border-border rounded-lg px-4 py-2 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent" />
+                <input name="model" value={formData.model} onChange={handleChange} placeholder="OptiPlex 7090" className={inputClass} />
               </FormField>
               <FormField label="Hostname">
-                <input name="hostname" value={formData.hostname} onChange={handleChange} placeholder="MIO-PC-01" className="w-full bg-surface border border-border rounded-lg px-4 py-2 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent" />
+                <input name="hostname" value={formData.hostname} onChange={handleChange} placeholder="MIO-PC-01" className={`${inputClass} font-mono`} />
               </FormField>
               <FormField label="Processor">
-                <input name="processor" value={formData.processor} onChange={handleChange} placeholder="Intel Core i5" className="w-full bg-surface border border-border rounded-lg px-4 py-2 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent" />
+                <input name="processor" value={formData.processor} onChange={handleChange} placeholder="Intel Core i5" className={inputClass} />
               </FormField>
               <FormField label="Memory">
-                <input name="memory" value={formData.memory} onChange={handleChange} placeholder="16 GB" className="w-full bg-surface border border-border rounded-lg px-4 py-2 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent" />
+                <input name="memory" value={formData.memory} onChange={handleChange} placeholder="16 GB" className={inputClass} />
               </FormField>
               <div className="md:col-span-2">
                 <FormField label="Disk storage">
-                  <input name="diskStorage" value={formData.diskStorage} onChange={handleChange} placeholder="512 GB SSD" className="w-full bg-surface border border-border rounded-lg px-4 py-2 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent" />
+                  <input name="diskStorage" value={formData.diskStorage} onChange={handleChange} placeholder="512 GB SSD" className={inputClass} />
                 </FormField>
               </div>
             </div>
           </FormSection>
 
           <FormSection
-            title="Assignment and location"
+            title="Assignment & Location"
             description="Specify who is using the equipment and where it is physically located."
-            icon={<UserCheck className="w-5 h-5" />}
+            icon={<UserCheck className="w-6 h-6" />}
           >
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6">
               <FormField label="Assigned to">
-                <input name="assignedTo" value={formData.assignedTo} onChange={handleChange} placeholder="Employee name" className="w-full bg-surface border border-border rounded-lg px-4 py-2 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent" />
+                <input name="assignedTo" value={formData.assignedTo} onChange={handleChange} placeholder="Employee name" className={inputClass} />
               </FormField>
               <FormField label="Exact location">
-                <input name="exactLocation" value={formData.exactLocation} onChange={handleChange} placeholder="Second floor, workstation 1" className="w-full bg-surface border border-border rounded-lg px-4 py-2 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent" />
+                <input name="exactLocation" value={formData.exactLocation} onChange={handleChange} placeholder="Second floor, workstation 1" className={inputClass} />
               </FormField>
             </div>
           </FormSection>
 
           <FormSection
-            title="Software information"
+            title="Software Profile"
             description="Record the primary operating system and productivity software installed."
-            icon={<HardDrive className="w-5 h-5" />}
+            icon={<HardDrive className="w-6 h-6" />}
           >
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6">
               <FormField label="Operating system">
-                <input name="operatingSystem" value={formData.operatingSystem} onChange={handleChange} placeholder="Windows 11 Pro" className="w-full bg-surface border border-border rounded-lg px-4 py-2 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent" />
+                <input name="operatingSystem" value={formData.operatingSystem} onChange={handleChange} placeholder="Windows 11 Pro" className={inputClass} />
               </FormField>
               <FormField label="Microsoft Office">
-                <input name="microsoftOffice" value={formData.microsoftOffice} onChange={handleChange} placeholder="Microsoft Office 2021" className="w-full bg-surface border border-border rounded-lg px-4 py-2 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent" />
+                <input name="microsoftOffice" value={formData.microsoftOffice} onChange={handleChange} placeholder="Microsoft Office 2021" className={inputClass} />
               </FormField>
             </div>
           </FormSection>
 
           <FormSection
-            title="Condition and status"
+            title="Condition & Status"
             description="Indicate the current physical condition and operational use of the equipment."
-            icon={<ShieldCheck className="w-5 h-5" />}
+            icon={<ShieldCheck className="w-6 h-6" />}
           >
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6">
               <FormField label="Condition">
-                <select name="condition" value={formData.condition} onChange={handleChange} className="w-full bg-surface border border-border rounded-lg px-4 py-2 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent">
+                <select name="condition" value={formData.condition} onChange={handleChange} className={`${inputClass} appearance-none cursor-pointer`}>
                   <option value="Excellent">Excellent</option>
                   <option value="Good">Good</option>
                   <option value="Fair">Fair</option>
@@ -226,7 +232,7 @@ export function CreateAsset({ onBack, assetToEdit }: { onBack: () => void, asset
                 </select>
               </FormField>
               <FormField label="Operational status">
-                <select name="operationalStatus" value={formData.operationalStatus} onChange={handleChange} className="w-full bg-surface border border-border rounded-lg px-4 py-2 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent">
+                <select name="operationalStatus" value={formData.operationalStatus} onChange={handleChange} className={`${inputClass} appearance-none cursor-pointer`}>
                   <option value="Operational">Operational</option>
                   <option value="Under Maintenance">Under Maintenance</option>
                   <option value="Non-Operational">Non-Operational</option>
@@ -235,48 +241,48 @@ export function CreateAsset({ onBack, assetToEdit }: { onBack: () => void, asset
                   <option value="Lost / Missing">Lost / Missing</option>
                 </select>
               </FormField>
-              <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-5">
-                <FormField label="Date acquired">
-                  <input type="date" name="dateAcquired" value={formData.dateAcquired} onChange={handleChange} className="w-full bg-surface border border-border rounded-lg px-4 py-2 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent" />
-                </FormField>
-                <FormField label="Acquisition cost">
-                  <div className="relative">
-                    <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-sm font-bold text-ink-muted pointer-events-none">₱</span>
-                    <input name="acquisitionCost" type="number" step="0.01" min="0" placeholder="0.00" value={formData.acquisitionCost} onChange={handleChange} className="w-full bg-surface border border-border rounded-lg pl-9 pr-4 py-2 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent" />
-                  </div>
-                </FormField>
-              </div>
+              
+              <FormField label="Date acquired">
+                <input type="date" name="dateAcquired" value={formData.dateAcquired} onChange={handleChange} className={inputClass} />
+              </FormField>
+              <FormField label="Acquisition cost">
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-sm font-bold text-ink-muted pointer-events-none">₱</span>
+                  <input name="acquisitionCost" type="number" step="0.01" min="0" placeholder="0.00" value={formData.acquisitionCost} onChange={handleChange} className={`w-full bg-bg border border-border rounded-xl pl-10 pr-4 py-3 text-sm font-medium outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition-all shadow-sm`} />
+                </div>
+              </FormField>
             </div>
           </FormSection>
 
           <FormSection
-            title="Audit information"
+            title="Audit Information"
             description="Record the latest physical audit and any additional observations."
-            icon={<FileCheck className="w-5 h-5" />}
+            icon={<FileCheck className="w-6 h-6" />}
           >
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6">
               <FormField label="Date audited">
-                <input type="date" name="dateAudited" value={formData.dateAudited} onChange={handleChange} className="w-full bg-surface border border-border rounded-lg px-4 py-2 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent" />
+                <input type="date" name="dateAudited" value={formData.dateAudited} onChange={handleChange} className={inputClass} />
               </FormField>
               <FormField label="Audited by">
-                <input name="auditedBy" value={formData.auditedBy} onChange={handleChange} placeholder="Auditor name" className="w-full bg-surface border border-border rounded-lg px-4 py-2 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent" />
+                <input name="auditedBy" value={formData.auditedBy} onChange={handleChange} placeholder="Auditor name" className={inputClass} />
               </FormField>
               <div className="md:col-span-2">
                 <FormField label="Remarks">
-                  <textarea name="remarks" value={formData.remarks} onChange={handleChange} rows={4} placeholder="Additional notes, observations or equipment concerns" className="w-full bg-surface border border-border rounded-lg px-4 py-2 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent" />
+                  <textarea name="remarks" value={formData.remarks} onChange={handleChange} rows={5} placeholder="Additional notes, observations or equipment concerns" className={`${inputClass} resize-none`} />
                 </FormField>
               </div>
             </div>
           </FormSection>
 
-          <div className="sticky bottom-4 z-20">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-surface border border-border p-4 rounded-2xl shadow-[0_15px_40px_rgba(0,0,0,0.5)]">
+          {/* Sticky Floating Action Bar */}
+          <div className="sticky bottom-6 z-20 pt-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-surface border border-border p-5 md:px-8 rounded-2xl shadow-2xl backdrop-blur-md bg-surface/95">
               <p className="text-sm text-ink-muted font-medium">Review the information before saving the equipment record.</p>
-              <div className="flex gap-3">
-                <button type="button" onClick={onBack} className="px-5 py-2.5 border border-border text-ink-muted bg-surface rounded-lg text-xs font-bold hover:bg-bg transition-colors shadow-sm">
+              <div className="flex gap-3 w-full sm:w-auto">
+                <button type="button" onClick={onBack} className="flex-1 sm:flex-none px-6 py-3 border border-border text-ink-muted bg-bg rounded-xl text-[11px] uppercase tracking-widest font-bold hover:text-ink transition-all shadow-sm">
                   Cancel
                 </button>
-                <button type="submit" className="px-5 py-2.5 bg-accent text-white rounded-lg text-xs font-bold hover:bg-accent/90 transition-colors shadow-sm flex items-center space-x-2">
+                <button type="submit" className="flex-1 sm:flex-none px-6 py-3 bg-accent text-white rounded-xl text-[11px] uppercase tracking-widest font-bold hover:opacity-90 transition-all shadow-md flex items-center justify-center space-x-2 active:scale-95">
                   <Database className="w-4 h-4" />
                   <span>{isEditing ? 'Update equipment' : 'Save equipment'}</span>
                 </button>
@@ -292,16 +298,16 @@ export function CreateAsset({ onBack, assetToEdit }: { onBack: () => void, asset
 function FormSection({ title, description, icon, children }: { title: string, description: string, icon: React.ReactNode, children: React.ReactNode }) {
   return (
     <section className="bg-surface rounded-2xl border border-border overflow-hidden shadow-sm">
-      <div className="p-6 border-b border-border flex items-start gap-4">
-        <div className="flex w-11 h-11 shrink-0 items-center justify-center rounded-2xl bg-accent/10 text-accent border border-accent/20">
+      <div className="p-6 md:p-8 border-b border-border bg-bg/50 flex flex-col sm:flex-row items-start gap-5">
+        <div className="flex w-14 h-14 shrink-0 items-center justify-center rounded-2xl bg-bg border border-border shadow-sm text-ink-muted">
           {icon}
         </div>
         <div>
-          <h2 className="text-base font-bold text-ink tracking-tight">{title}</h2>
-          <p className="text-sm text-ink-muted mt-1">{description}</p>
+          <h2 className="text-xl font-black text-ink tracking-tight">{title}</h2>
+          <p className="text-sm font-medium text-ink-muted mt-1.5">{description}</p>
         </div>
       </div>
-      <div className="p-6">
+      <div className="p-6 md:p-8">
         {children}
       </div>
     </section>
@@ -310,10 +316,10 @@ function FormSection({ title, description, icon, children }: { title: string, de
 
 function FormField({ label, required, children }: { label: string, required?: boolean, children: React.ReactNode }) {
   return (
-    <div className="space-y-1.5">
-      <label className="block text-xs font-bold text-ink-muted">
+    <div className="space-y-2">
+      <label className="block text-[10px] font-bold uppercase tracking-widest text-ink-muted">
         {label}
-        {required && <span className="text-red-500 ml-1">*</span>}
+        {required && <span className="text-accent ml-1.5">*</span>}
       </label>
       {children}
     </div>
