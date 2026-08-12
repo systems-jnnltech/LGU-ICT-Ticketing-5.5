@@ -45,28 +45,28 @@ export function AssetList({
   }
 
   return (
-    <div>
-      <section className="flex justify-between items-start mb-10">
+    <div className="space-y-8 max-w-[1600px] mx-auto">
+      <section className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6 mb-2">
         <div>
-          <h1 className="font-black text-[2.5rem] tracking-[-0.05em] mb-2 text-ink">
+          <h1 className="font-black text-[2.75rem] leading-none tracking-tighter mb-3 text-ink">
             Equipment
           </h1>
-          <p className="text-ink-muted text-[0.9rem]">
+          <p className="text-ink-muted text-sm font-medium tracking-wide">
             Municipal ICT asset oversight, registry management & inventory seeding
           </p>
         </div>
         {currentUser?.role === "Admin" && (
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-4">
             <button
               onClick={() => setIsImportOpen(true)}
-              className="flex items-center gap-2 bg-surface border border-border text-ink px-4 py-2.5 rounded-lg font-semibold text-xs hover:bg-bg transition-colors shadow-xs cursor-pointer"
+              className="flex items-center gap-2.5 bg-surface border border-border text-ink px-5 py-2.5 rounded-xl font-bold text-[11px] uppercase tracking-widest hover:bg-bg transition-all shadow-sm cursor-pointer active:scale-95"
             >
               <Upload className="w-4 h-4 text-accent" />
-              <span>Bulk Import / Seed</span>
+              <span>Bulk Import</span>
             </button>
             <button
               onClick={onCreateAsset}
-              className="flex items-center gap-2 bg-accent text-white px-5 py-2.5 rounded-lg font-semibold text-xs shadow-md hover:bg-accent/90 transition-colors cursor-pointer border-none"
+              className="flex items-center gap-2.5 bg-accent text-white px-5 py-2.5 rounded-xl font-bold text-[11px] uppercase tracking-widest shadow-sm hover:opacity-90 transition-all cursor-pointer border-none active:scale-95"
             >
               <Plus className="w-4 h-4" />
               <span>New Asset</span>
@@ -75,74 +75,84 @@ export function AssetList({
         )}
       </section>
 
-      <div className="bg-surface border border-border rounded-2xl overflow-hidden">
-        <div className="p-5 border-b border-border flex justify-between items-center">
-          <div className="text-[0.9rem] font-semibold flex items-center gap-2">
-            <div className="w-2 h-2 bg-accent rounded-full"></div>
-            Asset Registry ({displayedAssets.length} Equipment Items)
+      <div className="bg-surface border border-border rounded-2xl shadow-sm overflow-hidden">
+        <div className="px-6 py-5 border-b border-border bg-bg/50 flex flex-col sm:flex-row justify-between items-center gap-4">
+          <div className="text-[11px] font-bold flex items-center gap-3 text-ink">
+            <div className="w-2 h-4 bg-accent rounded-[1px]"></div>
+            <span className="uppercase tracking-widest">Asset Registry ({displayedAssets.length})</span>
           </div>
-          <div className="relative">
+          <div className="relative w-full sm:w-auto">
             <input
               type="text"
-              placeholder="Filter by Asset Code, Name, Serial or Office..."
+              placeholder="Filter by Asset Code, Name, Serial..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-bg border border-border rounded-md text-ink px-4 py-2 text-[0.75rem] w-[300px] outline-none focus:border-accent"
+              className="bg-bg border border-border rounded-xl text-ink px-4 py-2.5 text-sm font-medium w-full sm:w-[320px] outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition-all shadow-sm"
             />
           </div>
         </div>
 
-        <table className="w-full text-left border-collapse">
-          <thead className="bg-surface/2">
-            <tr className="font-mono text-[0.7rem] uppercase tracking-[0.1em] text-ink-muted">
-              <th className="px-6 py-4 font-normal">Asset Code</th>
-              <th className="px-6 py-4 font-normal">Item Details</th>
-              <th className="px-6 py-4 font-normal">Location</th>
-              <th className="px-6 py-4 font-normal">Status</th>
-              <th className="px-6 py-4 font-normal">Assignee</th>
-            </tr>
-          </thead>
-          <tbody>
-            {displayedAssets.map((asset) => {
-              const office = offices.find((o) => o.id === asset.officeId) || findOfficeForAsset(asset, offices);
-              return (
-                <tr
-                  key={asset.id}
-                  onClick={() => onSelectAsset(asset.id)}
-                  className="hover:bg-surface/2 cursor-pointer transition-colors group"
-                >
-                  <td className="px-6 py-5 border-b border-border group-last:border-none font-mono text-accent font-medium text-[0.8rem]">
-                    {asset.assetCode || asset.propertyNumber || asset.id}
-                  </td>
-                  <td className="px-6 py-5 border-b border-border group-last:border-none">
-                    <div className="text-[0.85rem] font-semibold">{asset.equipmentType}</div>
-                    <div className="text-[0.75rem] text-ink-muted mt-0.5">
-                      {asset.brand} {asset.model}
-                    </div>
-                  </td>
-                  <td className="px-6 py-5 border-b border-border group-last:border-none text-[0.85rem]">
-                    {office?.name || 'General Office'}
-                  </td>
-                  <td className="px-6 py-5 border-b border-border group-last:border-none">
-                    <span
-                      className={`px-2.5 py-1 rounded-md text-[10px] font-bold font-mono uppercase border ${
-                        asset.operationalStatus === "Operational"
-                          ? "bg-green-500/10 text-green-400 border-green-500/20"
-                          : "bg-red-500/10 text-red-400 border-red-500/20"
-                      }`}
-                    >
-                      {asset.operationalStatus}
-                    </span>
-                  </td>
-                  <td className="px-6 py-5 border-b border-border group-last:border-none text-[0.85rem]">
-                    {asset.assignedTo || "Unassigned"}
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse min-w-[900px]">
+            <thead className="bg-surface border-b border-border">
+              <tr className="text-[10px] uppercase tracking-widest font-bold text-ink-muted">
+                <th className="px-6 py-4 font-bold">Asset Code</th>
+                <th className="px-6 py-4 font-bold">Item Details</th>
+                <th className="px-6 py-4 font-bold">Location</th>
+                <th className="px-6 py-4 font-bold">Status</th>
+                <th className="px-6 py-4 font-bold">Assignee</th>
+              </tr>
+            </thead>
+            <tbody className="text-sm">
+              {displayedAssets.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="p-12 text-center text-ink-muted font-medium">
+                    No equipment found matching your search.
                   </td>
                 </tr>
-              );
-            })}
-          </tbody>
-        </table>
+              ) : (
+                displayedAssets.map((asset) => {
+                  const office = offices.find((o) => o.id === asset.officeId) || findOfficeForAsset(asset, offices);
+                  return (
+                    <tr
+                      key={asset.id}
+                      onClick={() => onSelectAsset(asset.id)}
+                      className="hover:bg-bg/50 cursor-pointer transition-colors group border-b border-border group-last:border-none"
+                    >
+                      <td className="px-6 py-5 font-mono text-accent font-bold text-[13px]">
+                        {asset.assetCode || asset.propertyNumber || asset.id}
+                      </td>
+                      <td className="px-6 py-5">
+                        <div className="text-[14px] font-semibold text-ink">{asset.equipmentType}</div>
+                        <div className="text-[12px] text-ink-muted font-medium mt-1">
+                          {asset.brand} {asset.model}
+                        </div>
+                      </td>
+                      <td className="px-6 py-5 text-[13px] font-medium text-ink-muted">
+                        {office?.name || 'General Office'}
+                      </td>
+                      <td className="px-6 py-5">
+                        <span
+                          className={`px-2.5 py-1 rounded-md text-[10px] font-bold tracking-widest uppercase border ${
+                            asset.operationalStatus === "Operational"
+                              ? "bg-green-500/10 text-green-500 border-green-500/20"
+                              : "bg-red-500/10 text-red-500 border-red-500/20"
+                          }`}
+                        >
+                          {asset.operationalStatus}
+                        </span>
+                      </td>
+                      <td className="px-6 py-5 text-[13px] font-medium text-ink-muted">
+                        {asset.assignedTo || "Unassigned"}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
         </div>
+      </div>
 
       <BulkImportModal
         isOpen={isImportOpen}
@@ -170,58 +180,58 @@ export function AssetDetail({
   const relatedTickets = tickets.filter((t) => t.assetId === asset.id);
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto pb-12">
+    <div className="space-y-8 max-w-[1200px] mx-auto pb-16">
       <button
         onClick={onBack}
-        className="flex items-center space-x-2 text-ink-muted hover:text-ink transition-colors"
+        className="flex items-center space-x-2 text-ink-muted hover:text-ink transition-colors text-[11px] font-bold uppercase tracking-widest"
       >
         <ArrowLeft className="w-4 h-4" />
-        <span>Back to Assets</span>
+        <span>Back to Registry</span>
       </button>
 
-      {/* Header */}
-      <div className="bg-surface p-6 rounded-xl shadow-sm border border-border flex items-start justify-between relative">
-        <div className="flex items-center space-x-4">
-          <div className="w-16 h-16 bg-bg border border-border rounded-xl flex items-center justify-center">
-            <Monitor className="w-8 h-8 text-ink-muted" />
+      {/* Header Card */}
+      <div className="bg-surface p-8 rounded-2xl shadow-sm border border-border flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative">
+        <div className="flex items-center space-x-6">
+          <div className="w-20 h-20 bg-bg border border-border rounded-2xl flex items-center justify-center shadow-sm">
+            <Monitor className="w-10 h-10 text-ink-muted" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-ink">
+            <h1 className="text-3xl font-black text-ink tracking-tight">
               {asset.equipmentType}
             </h1>
-            <div className="text-xs text-ink-muted mt-0.5">
+            <div className="text-sm font-medium text-ink-muted mt-1.5">
               {asset.brand} {asset.model}
             </div>
-            <div className="flex items-center space-x-2 mt-2">
-              <span className="text-[10px] font-bold text-accent bg-accent/10 px-2 py-0.5 rounded border border-accent/20 font-mono">
+            <div className="flex flex-wrap items-center gap-3 mt-4">
+              <span className="text-[11px] font-bold text-accent bg-accent/10 px-3 py-1 rounded-md border border-accent/20 font-mono tracking-wider">
                 {asset.assetCode || asset.propertyNumber}
               </span>
               <span
-                className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                className={`text-[10px] font-bold px-3 py-1 rounded-md tracking-widest uppercase border ${
                   asset.operationalStatus === "Operational"
-                    ? "bg-emerald-100 text-emerald-700"
-                    : "bg-red-100 text-red-700"
+                    ? "bg-green-500/10 text-green-500 border-green-500/20"
+                    : "bg-red-500/10 text-red-500 border-red-500/20"
                 }`}
               >
-                {asset.operationalStatus.toUpperCase()}
+                {asset.operationalStatus}
               </span>
             </div>
           </div>
         </div>
-        <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2">
+        <div className="flex items-center gap-3 w-full md:w-auto">
           <button
             onClick={() => setShowQR(true)}
-            className="flex items-center space-x-2 px-3 py-1.5 border border-border text-ink-muted rounded-lg hover:bg-bg text-xs font-bold"
+            className="flex-1 md:flex-none flex items-center justify-center space-x-2 px-5 py-2.5 border border-border bg-surface text-ink-muted rounded-xl hover:bg-bg hover:text-ink text-[11px] font-bold uppercase tracking-widest transition-all shadow-sm"
           >
-            <span className="w-3.5 h-3.5 flex items-center justify-center border border-current rounded-[2px] font-mono text-[8px]">QR</span>
+            <span className="w-4 h-4 flex items-center justify-center border-2 border-current rounded-[4px] font-mono text-[9px]">QR</span>
             <span>QR Code</span>
           </button>
           {currentUser?.role === "Admin" && onEdit && (
             <button
               onClick={onEdit}
-              className="flex items-center space-x-2 px-3 py-1.5 border border-border text-ink-muted rounded-lg hover:bg-bg text-xs font-bold"
+              className="flex-1 md:flex-none flex items-center justify-center space-x-2 px-5 py-2.5 border border-border bg-surface text-ink-muted rounded-xl hover:bg-bg hover:text-ink text-[11px] font-bold uppercase tracking-widest transition-all shadow-sm"
             >
-              <Edit2 className="w-3.5 h-3.5" />
+              <Edit2 className="w-4 h-4" />
               <span>Edit Asset</span>
             </button>
           )}
@@ -229,376 +239,262 @@ export function AssetDetail({
       </div>
 
       {showQR && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-surface rounded-xl shadow-xl border border-border p-6 max-w-sm w-full text-center relative">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-md p-4">
+          <div className="bg-surface rounded-2xl shadow-2xl border border-border p-8 max-w-sm w-full text-center relative">
             <button
               onClick={() => setShowQR(false)}
-              className="absolute right-4 top-4 text-ink-muted hover:text-ink"
+              className="absolute right-5 top-5 text-ink-muted hover:text-ink transition-colors p-1"
             >
               <X className="w-5 h-5" />
             </button>
-            <h3 className="text-lg font-bold text-ink mb-2">Asset QR Code</h3>
-            <p className="text-sm text-ink-muted mb-6">{asset.equipmentType} - {asset.brand}</p>
-            <div className="bg-white p-4 rounded-lg inline-block mx-auto mb-4 border border-border">
+            <h3 className="text-xl font-bold text-ink mb-1">Asset QR Code</h3>
+            <p className="text-sm font-medium text-ink-muted mb-8">{asset.equipmentType} - {asset.brand}</p>
+            <div className="bg-white p-5 rounded-2xl inline-block mx-auto mb-6 border border-border shadow-sm">
               <QRCodeSVG 
                 value={`LGU-ICT-ASSET:${asset.id}`} 
-                size={200}
+                size={220}
                 level="H"
-                includeMargin={true}
+                includeMargin={false}
               />
             </div>
-            <p className="font-mono text-sm font-bold text-ink mb-4">{asset.propertyNumber}</p>
+            <p className="font-mono text-sm font-bold text-ink mb-6 tracking-widest">{asset.assetCode || asset.propertyNumber}</p>
             <button 
               onClick={() => window.print()}
-              className="w-full bg-accent text-white py-2 rounded-lg font-bold hover:opacity-90 transition-opacity"
+              className="w-full bg-accent text-white py-3 rounded-xl font-bold text-[11px] uppercase tracking-widest shadow-sm hover:opacity-90 transition-all active:scale-95"
             >
-              Print QR Code
+              Print Label
             </button>
           </div>
         </div>
       )}
 
       <div className="space-y-6">
-        <div className="space-y-6">
-          {/* Details */}
-          <div className="bg-surface rounded-xl shadow-sm border border-border overflow-hidden w-full">
-            <div className="px-5 py-3 border-b border-border bg-bg">
-              <h3 className="text-xs font-bold text-ink uppercase tracking-wider">
-                Registry Information
-              </h3>
+        {/* Registry Information */}
+        <div className="bg-surface rounded-2xl shadow-sm border border-border overflow-hidden">
+          <div className="px-6 py-5 border-b border-border bg-bg/50">
+            <h3 className="text-[11px] font-bold text-ink uppercase tracking-widest flex items-center gap-2">
+              <Database className="w-4 h-4 text-ink-muted" /> Registry Information
+            </h3>
+          </div>
+          <div className="p-6 md:p-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-y-8 gap-x-6">
+            <div>
+              <div className="text-[10px] font-bold uppercase text-ink-muted tracking-widest mb-1.5">Asset Code</div>
+              <div className="font-semibold text-sm text-accent font-mono">{asset.assetCode || asset.propertyNumber || asset.id}</div>
             </div>
-            <div className="p-5 grid grid-cols-2 gap-y-5 gap-x-4">
+            <div>
+              <div className="text-[10px] font-bold uppercase text-ink-muted tracking-widest mb-1.5">Office</div>
+              <div className="font-semibold text-sm text-ink">{office?.name || 'General Office'}</div>
+            </div>
+            <div>
+              <div className="text-[10px] font-bold uppercase text-ink-muted tracking-widest mb-1.5">Equipment Type</div>
+              <div className="font-semibold text-sm text-ink">{asset.equipmentType}</div>
+            </div>
+            <div>
+              <div className="text-[10px] font-bold uppercase text-ink-muted tracking-widest mb-1.5">Property Number</div>
+              <div className="font-semibold text-sm text-ink">{asset.propertyNumber || 'N/A'}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Device Information */}
+        <div className="bg-surface rounded-2xl shadow-sm border border-border overflow-hidden">
+          <div className="px-6 py-5 border-b border-border bg-bg/50">
+            <h3 className="text-[11px] font-bold text-ink uppercase tracking-widest flex items-center gap-2">
+              <Monitor className="w-4 h-4 text-ink-muted" /> Device Information
+            </h3>
+          </div>
+          <div className="p-6 md:p-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-y-8 gap-x-6">
+            <div>
+              <div className="text-[10px] font-bold uppercase text-ink-muted tracking-widest mb-1.5">Serial Number</div>
+              <div className="font-semibold text-sm text-ink font-mono">{asset.serialNumber || "-"}</div>
+            </div>
+            <div>
+              <div className="text-[10px] font-bold uppercase text-ink-muted tracking-widest mb-1.5">Brand</div>
+              <div className="font-semibold text-sm text-ink">{asset.brand || "-"}</div>
+            </div>
+            <div>
+              <div className="text-[10px] font-bold uppercase text-ink-muted tracking-widest mb-1.5">Model</div>
+              <div className="font-semibold text-sm text-ink">{asset.model || "-"}</div>
+            </div>
+            <div>
+              <div className="text-[10px] font-bold uppercase text-ink-muted tracking-widest mb-1.5">Hostname</div>
+              <div className="font-semibold text-sm text-ink font-mono">{asset.hostname || "-"}</div>
+            </div>
+            <div>
+              <div className="text-[10px] font-bold uppercase text-ink-muted tracking-widest mb-1.5">Processor</div>
+              <div className="font-semibold text-sm text-ink">{asset.processor || "-"}</div>
+            </div>
+            <div>
+              <div className="text-[10px] font-bold uppercase text-ink-muted tracking-widest mb-1.5">Memory</div>
+              <div className="font-semibold text-sm text-ink">{asset.memory || "-"}</div>
+            </div>
+            <div className="lg:col-span-2">
+              <div className="text-[10px] font-bold uppercase text-ink-muted tracking-widest mb-1.5">Disk Storage</div>
+              <div className="font-semibold text-sm text-ink">{asset.diskStorage || "-"}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Software & Assignment */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="bg-surface rounded-2xl shadow-sm border border-border overflow-hidden">
+            <div className="px-6 py-5 border-b border-border bg-bg/50">
+              <h3 className="text-[11px] font-bold text-ink uppercase tracking-widest">Software Profile</h3>
+            </div>
+            <div className="p-6 md:p-8 space-y-8">
               <div>
-                <div className="text-[10px] font-bold uppercase text-ink-muted tracking-wider">
-                  Asset Code
-                </div>
-                <div className="font-medium text-sm text-accent font-mono mt-1">
-                  {asset.assetCode || asset.propertyNumber || asset.id}
-                </div>
+                <div className="text-[10px] font-bold uppercase text-ink-muted tracking-widest mb-1.5">Operating System</div>
+                <div className="font-semibold text-sm text-ink">{asset.operatingSystem || "-"}</div>
               </div>
               <div>
-                <div className="text-[10px] font-bold uppercase text-ink-muted tracking-wider">
-                  Office
-                </div>
-                <div className="font-medium text-sm text-ink mt-1">
-                  {office?.name || 'General Office'}
-                </div>
-              </div>
-              <div>
-                <div className="text-[10px] font-bold uppercase text-ink-muted tracking-wider">
-                  Equipment Type
-                </div>
-                <div className="font-medium text-sm text-ink mt-1">
-                  {asset.equipmentType}
-                </div>
-              </div>
-              <div>
-                <div className="text-[10px] font-bold uppercase text-ink-muted tracking-wider">
-                  Property Number
-                </div>
-                <div className="font-medium text-sm text-ink mt-1">
-                  {asset.propertyNumber || 'N/A'}
-                </div>
+                <div className="text-[10px] font-bold uppercase text-ink-muted tracking-widest mb-1.5">Microsoft Office</div>
+                <div className="font-semibold text-sm text-ink">{asset.microsoftOffice || "-"}</div>
               </div>
             </div>
           </div>
 
-          <div className="bg-surface rounded-xl shadow-sm border border-border overflow-hidden">
-            <div className="px-5 py-3 border-b border-border bg-bg">
-              <h3 className="text-xs font-bold text-ink uppercase tracking-wider">
-                Device Information
-              </h3>
+          <div className="bg-surface rounded-2xl shadow-sm border border-border overflow-hidden">
+            <div className="px-6 py-5 border-b border-border bg-bg/50">
+              <h3 className="text-[11px] font-bold text-ink uppercase tracking-widest">Assignment & Location</h3>
             </div>
-            <div className="p-5 grid grid-cols-2 gap-y-5 gap-x-4">
+            <div className="p-6 md:p-8 space-y-8">
               <div>
-                <div className="text-[10px] font-bold uppercase text-ink-muted tracking-wider">
-                  Serial Number
-                </div>
-                <div className="font-medium text-sm text-ink mt-1">
-                  {asset.serialNumber}
-                </div>
+                <div className="text-[10px] font-bold uppercase text-ink-muted tracking-widest mb-1.5">Assigned To</div>
+                <div className="font-semibold text-sm text-ink">{asset.assignedTo || "Unassigned"}</div>
               </div>
               <div>
-                <div className="text-[10px] font-bold uppercase text-ink-muted tracking-wider">
-                  Brand
-                </div>
-                <div className="font-medium text-sm text-ink mt-1">
-                  {asset.brand}
-                </div>
-              </div>
-              <div>
-                <div className="text-[10px] font-bold uppercase text-ink-muted tracking-wider">
-                  Model
-                </div>
-                <div className="font-medium text-sm text-ink mt-1">
-                  {asset.model}
-                </div>
-              </div>
-              <div>
-                <div className="text-[10px] font-bold uppercase text-ink-muted tracking-wider">
-                  Hostname
-                </div>
-                <div className="font-medium text-sm text-ink mt-1">
-                  {asset.hostname || "-"}
-                </div>
-              </div>
-              <div>
-                <div className="text-[10px] font-bold uppercase text-ink-muted tracking-wider">
-                  Processor
-                </div>
-                <div className="font-medium text-sm text-ink mt-1">
-                  {asset.processor || "-"}
-                </div>
-              </div>
-              <div>
-                <div className="text-[10px] font-bold uppercase text-ink-muted tracking-wider">
-                  Memory
-                </div>
-                <div className="font-medium text-sm text-ink mt-1">
-                  {asset.memory || "-"}
-                </div>
-              </div>
-              <div>
-                <div className="text-[10px] font-bold uppercase text-ink-muted tracking-wider">
-                  Disk Storage
-                </div>
-                <div className="font-medium text-sm text-ink mt-1">
-                  {asset.diskStorage || "-"}
-                </div>
+                <div className="text-[10px] font-bold uppercase text-ink-muted tracking-widest mb-1.5">Exact Location</div>
+                <div className="font-semibold text-sm text-ink">{asset.exactLocation || "-"}</div>
               </div>
             </div>
           </div>
+        </div>
 
-          <div className="bg-surface rounded-xl shadow-sm border border-border overflow-hidden">
-            <div className="px-5 py-3 border-b border-border bg-bg">
-              <h3 className="text-xs font-bold text-ink uppercase tracking-wider">
-                Software Information
-              </h3>
+        {/* Condition & Audit */}
+        <div className="bg-surface rounded-2xl shadow-sm border border-border overflow-hidden">
+          <div className="px-6 py-5 border-b border-border bg-bg/50">
+            <h3 className="text-[11px] font-bold text-ink uppercase tracking-widest">Status & Audit</h3>
+          </div>
+          <div className="p-6 md:p-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-y-8 gap-x-6">
+            <div>
+              <div className="text-[10px] font-bold uppercase text-ink-muted tracking-widest mb-1.5">Physical Condition</div>
+              <div className="font-semibold text-sm text-ink">{asset.condition}</div>
             </div>
-            <div className="p-5 grid grid-cols-2 gap-y-5 gap-x-4">
-              <div>
-                <div className="text-[10px] font-bold uppercase text-ink-muted tracking-wider">
-                  Operating System
-                </div>
-                <div className="font-medium text-sm text-ink mt-1">
-                  {asset.operatingSystem || "-"}
-                </div>
+            <div>
+              <div className="text-[10px] font-bold uppercase text-ink-muted tracking-widest mb-1.5">Acquisition Cost</div>
+              <div className="font-semibold text-sm text-ink">{asset.acquisitionCost ? `₱ ${asset.acquisitionCost}` : "-"}</div>
+            </div>
+            <div>
+              <div className="text-[10px] font-bold uppercase text-ink-muted tracking-widest mb-1.5">Date Acquired</div>
+              <div className="font-semibold text-sm text-ink">{asset.dateAcquired ? format(new Date(asset.dateAcquired), 'MMMM d, yyyy') : "-"}</div>
+            </div>
+            <div>
+              <div className="text-[10px] font-bold uppercase text-ink-muted tracking-widest mb-1.5">Last Audited</div>
+              <div className="font-semibold text-sm text-ink">
+                {asset.dateAudited ? format(new Date(asset.dateAudited), 'MMMM d, yyyy') : "-"}
+                {asset.auditedBy && <span className="text-ink-muted font-normal ml-1">by {asset.auditedBy}</span>}
               </div>
-              <div>
-                <div className="text-[10px] font-bold uppercase text-ink-muted tracking-wider">
-                  Microsoft Office
-                </div>
-                <div className="font-medium text-sm text-ink mt-1">
-                  {asset.microsoftOffice || "-"}
-                </div>
-              </div>
+            </div>
+            <div className="lg:col-span-4">
+              <div className="text-[10px] font-bold uppercase text-ink-muted tracking-widest mb-1.5">Remarks</div>
+              <div className="font-semibold text-sm text-ink whitespace-pre-wrap">{asset.remarks || "No remarks documented."}</div>
             </div>
           </div>
+        </div>
 
-          <div className="bg-surface rounded-xl shadow-sm border border-border overflow-hidden">
-            <div className="px-5 py-3 border-b border-border bg-bg">
-              <h3 className="text-xs font-bold text-ink uppercase tracking-wider">
-                Assignment and Location
-              </h3>
-            </div>
-            <div className="p-5 grid grid-cols-2 gap-y-5 gap-x-4">
-              <div>
-                <div className="text-[10px] font-bold uppercase text-ink-muted tracking-wider">
-                  Assigned To
-                </div>
-                <div className="font-medium text-sm text-ink mt-1">
-                  {asset.assignedTo || "Unassigned"}
-                </div>
-              </div>
-              <div>
-                <div className="text-[10px] font-bold uppercase text-ink-muted tracking-wider">
-                  Exact Location
-                </div>
-                <div className="font-medium text-sm text-ink mt-1">
-                  {asset.exactLocation || "-"}
-                </div>
-              </div>
-            </div>
+        {/* Equipment History */}
+        <div className="bg-surface rounded-2xl shadow-sm border border-border overflow-hidden">
+          <div className="px-6 py-5 border-b border-border bg-bg/50 flex justify-between items-center">
+            <h3 className="text-[11px] font-bold text-ink uppercase tracking-widest">
+              Service & Audit History
+            </h3>
+            <span className="text-[10px] text-ink-muted bg-surface border border-border px-3 py-1 rounded-md font-mono font-bold tracking-widest">
+              RECORDS: {(asset.history?.length || 0) + relatedTickets.length}
+            </span>
           </div>
+          
+          <div className="divide-y divide-border">
+            {(!asset.history || asset.history.length === 0) &&
+            relatedTickets.length === 0 ? (
+              <div className="p-10 text-center text-ink-muted text-sm font-medium">
+                No history or service tickets recorded.
+              </div>
+            ) : (
+              <>
+                {/* Edits from Asset History */}
+                {asset.history?.map((record) => (
+                  <div
+                    key={record.id}
+                    className="p-6 md:p-8 hover:bg-bg/50 transition-colors"
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-3 gap-2">
+                      <div className="font-bold text-sm text-ink">
+                        {record.action}
+                      </div>
+                      <span className="text-[11px] font-bold text-ink-muted uppercase tracking-widest">
+                        {format(new Date(record.createdAt), "MMM d, yyyy • h:mm a")}
+                      </span>
+                    </div>
+                    <p className="text-sm font-medium text-ink-muted leading-relaxed whitespace-pre-wrap max-w-4xl">
+                      {record.changes}
+                    </p>
+                  </div>
+                ))}
 
-          <div className="bg-surface rounded-xl shadow-sm border border-border overflow-hidden">
-            <div className="px-5 py-3 border-b border-border bg-bg">
-              <h3 className="text-xs font-bold text-ink uppercase tracking-wider">
-                Condition and Status
-              </h3>
-            </div>
-            <div className="p-5 grid grid-cols-2 gap-y-5 gap-x-4">
-              <div>
-                <div className="text-[10px] font-bold uppercase text-ink-muted tracking-wider">
-                  Condition
-                </div>
-                <div className="font-medium text-sm text-ink mt-1">
-                  {asset.condition}
-                </div>
-              </div>
-              <div>
-                <div className="text-[10px] font-bold uppercase text-ink-muted tracking-wider">
-                  Operational Status
-                </div>
-                <div className="font-medium text-sm text-ink mt-1">
-                  {asset.operationalStatus}
-                </div>
-              </div>
-              <div>
-                <div className="text-[10px] font-bold uppercase text-ink-muted tracking-wider">
-                  Acquisition Cost
-                </div>
-                <div className="font-medium text-sm text-ink mt-1">
-                  {asset.acquisitionCost || "-"}
-                </div>
-              </div>
-              <div>
-                <div className="text-[10px] font-bold uppercase text-ink-muted tracking-wider">
-                  Date Acquired
-                </div>
-                <div className="font-medium text-sm text-ink mt-1">
-                  {asset.dateAcquired || "-"}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-surface rounded-xl shadow-sm border border-border overflow-hidden">
-            <div className="px-5 py-3 border-b border-border bg-bg">
-              <h3 className="text-xs font-bold text-ink uppercase tracking-wider">
-                Audit Information
-              </h3>
-            </div>
-            <div className="p-5 grid grid-cols-2 gap-y-5 gap-x-4">
-              <div>
-                <div className="text-[10px] font-bold uppercase text-ink-muted tracking-wider">
-                  Date Audited
-                </div>
-                <div className="font-medium text-sm text-ink mt-1">
-                  {asset.dateAudited || "-"}
-                </div>
-              </div>
-              <div>
-                <div className="text-[10px] font-bold uppercase text-ink-muted tracking-wider">
-                  Audited By
-                </div>
-                <div className="font-medium text-sm text-ink mt-1">
-                  {asset.auditedBy || "-"}
-                </div>
-              </div>
-              <div className="col-span-2">
-                <div className="text-[10px] font-bold uppercase text-ink-muted tracking-wider">
-                  Remarks
-                </div>
-                <div className="font-medium text-sm text-ink mt-1">
-                  {asset.remarks || "-"}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Equipment History */}
-          <div className="bg-surface rounded-xl shadow-sm border border-border overflow-hidden">
-            <div className="px-5 py-3 border-b border-border bg-bg flex justify-between items-center">
-              <h3 className="text-xs font-bold text-ink uppercase tracking-wider">
-                Equipment History
-              </h3>
-              <span className="text-[10px] text-ink-muted bg-white/5 px-2 py-0.5 rounded font-mono">
-                Total records{" "}
-                {(asset.history?.length || 0) + relatedTickets.length}
-              </span>
-            </div>
-            <div className="px-5 py-4 bg-bg/50 border-b border-border">
-              <p className="text-xs text-ink-muted">
-                Recorded actions, changes, and repairs for this equipment.
-              </p>
-            </div>
-            <div className="divide-y divide-white/5">
-              {(!asset.history || asset.history.length === 0) &&
-              relatedTickets.length === 0 ? (
-                <div className="p-6 text-center text-ink-muted text-xs">
-                  No history found.
-                </div>
-              ) : (
-                <>
-                  {/* Edits from Asset History */}
-                  {asset.history?.map((record) => (
-                    <div
-                      key={record.id}
-                      className="p-5 hover:bg-white/5 transition-colors"
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="font-bold text-sm text-ink">
-                          {record.action}
-                        </div>
-                        <span className="text-[10px] text-ink-muted">
-                          {format(
-                            new Date(record.createdAt),
-                            "MMM d, yyyy h:mm a",
-                          )}
+                {/* Related Tickets as Repair History */}
+                {relatedTickets.map((ticket) => (
+                  <div
+                    key={ticket.id}
+                    className="p-6 md:p-8 hover:bg-bg/50 transition-colors"
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-2">
+                      <div className="flex items-center space-x-3">
+                        <span className="font-bold text-sm text-accent font-mono tracking-wider bg-accent/10 px-2 py-0.5 rounded border border-accent/20">
+                          #{ticket.ticketNumber}
+                        </span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded tracking-widest uppercase border border-border bg-surface text-ink">
+                          {ticket.status}
                         </span>
                       </div>
-                      <p className="text-xs text-ink-muted leading-relaxed whitespace-pre-wrap">
-                        {record.changes}
-                      </p>
+                      <span className="text-[11px] font-bold text-ink-muted uppercase tracking-widest">
+                        {format(new Date(ticket.createdAt), "MMM d, yyyy • h:mm a")}
+                      </span>
                     </div>
-                  ))}
-
-                  {/* Related Tickets as Repair History */}
-                  {relatedTickets.map((ticket) => (
-                    <div
-                      key={ticket.id}
-                      className="p-5 hover:bg-white/5 transition-colors"
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center space-x-2">
-                          <span className="font-bold text-sm text-accent">
-                            Ticket #{ticket.ticketNumber}
-                          </span>
-                        </div>
-                        <div className="flex items-center space-x-3">
-                          <span className="text-[10px] text-ink-muted">
-                            {format(
-                              new Date(ticket.createdAt),
-                              "MMM d, yyyy h:mm a",
-                            )}
-                          </span>
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-white/5 text-ink-muted">
-                            {ticket.status}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="font-bold text-xs text-ink mb-1">
-                        {ticket.subject}
-                      </div>
-                      <p className="text-xs text-ink-muted leading-relaxed mb-3">
-                        {ticket.description}
-                      </p>
-                      {ticket.ictRecommendation && (
-                        <div className="bg-bg/50 p-3 rounded-lg border border-border">
-                          <div className="text-[10px] font-bold text-ink uppercase tracking-wider mb-1">ICT Action / Recommendation</div>
-                          <p className="text-xs text-ink-muted whitespace-pre-wrap">{ticket.ictRecommendation}</p>
-                        </div>
-                      )}
-                      {ticket.comments && ticket.comments.filter(c => !c.text.startsWith('System: Status changed to')).length > 0 && (
-                        <div className="mt-3 space-y-2">
-                          <div className="text-[10px] font-bold text-ink uppercase tracking-wider mb-1">Repair Logs & Comments</div>
-                          {ticket.comments.filter(c => !c.text.startsWith('System: Status changed to')).map(comment => {
-                            const author = users.find(u => u.id === comment.userId);
-                            return (
-                              <div key={comment.id} className="text-xs border-l-2 border-border pl-3">
-                                <span className="font-bold text-ink mr-2">{author?.name || 'Unknown'}</span>
-                                <span className="text-ink-muted">{comment.text}</span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
+                    <div className="font-bold text-sm text-ink mb-1.5">
+                      {ticket.subject}
                     </div>
-                  ))}
-                </>
-              )}
-            </div>
+                    <p className="text-sm font-medium text-ink-muted leading-relaxed mb-5 max-w-4xl">
+                      {ticket.description}
+                    </p>
+                    
+                    {ticket.ictRecommendation && (
+                      <div className="bg-bg/50 p-5 rounded-xl border border-border mt-4">
+                        <div className="text-[10px] font-bold text-ink uppercase tracking-widest mb-2 flex items-center gap-2">
+                          <div className="w-1.5 h-1.5 bg-accent rounded-full"></div>
+                          ICT Action / Resolution
+                        </div>
+                        <p className="text-sm font-medium text-ink-muted whitespace-pre-wrap">{ticket.ictRecommendation}</p>
+                      </div>
+                    )}
+                    
+                    {ticket.comments && ticket.comments.filter(c => !c.text.startsWith('System: Status changed to')).length > 0 && (
+                      <div className="mt-6 space-y-4">
+                        <div className="text-[10px] font-bold text-ink uppercase tracking-widest mb-3 border-b border-border pb-2">Support Logs</div>
+                        {ticket.comments.filter(c => !c.text.startsWith('System: Status changed to')).map(comment => {
+                          const author = users.find(u => u.id === comment.userId);
+                          return (
+                            <div key={comment.id} className="text-sm border-l-2 border-accent/50 pl-4 py-1">
+                              <span className="font-bold text-ink mr-2">{author?.name || 'Unknown'}</span>
+                              <span className="text-ink-muted font-medium">{comment.text}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </>
+            )}
           </div>
         </div>
       </div>
