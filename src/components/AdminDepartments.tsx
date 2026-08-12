@@ -211,7 +211,7 @@ export function AdminDepartments() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
-    </div>
   );
 }
