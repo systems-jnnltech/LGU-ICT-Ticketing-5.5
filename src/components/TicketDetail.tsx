@@ -603,21 +603,37 @@ Notes: ${referralData.notes}`;
 
                                         if (result.isConfirmed) {
                                             const { reason, details } = result.value;
-                                            const attempts = (ticket.ictRecommendation || '').match(/Taken \d+:/g)?.length || 0;
-                                            const reportText = `Problem Still Exists Report:\nReason: ${reason}${details ? '\nDetails: ' + details : ''}`;
-                                            
-                                            if (attempts >= 2) {
-                                                const escResult = await ConfirmModal.fire({
-                                                    text: 'Problem still exists after 2 attempts. Escalate to ICT Head?'
-                                                });
-                                                if (escResult.isConfirmed) {
-                                                    changeTicketStatus(ticket.id, 'ESCALATED', ticket.assignedToId);
-                                                    addComment(ticket.id, `${reportText}\n\nAction: Escalated ticket (Problem still exists after multiple attempts)`);
-                                                    Toast.fire({ icon: 'success', title: 'Ticket Escalated' });
+
+                                            const confirmResult = await Swal.fire({
+                                                title: 'Are you sure?',
+                                                text: 'You are about to report that the problem still exists. This will return the ticket to ICT Support for another resolution attempt.',
+                                                icon: 'warning',
+                                                showCancelButton: true,
+                                                confirmButtonText: 'Yes, Submit Report',
+                                                cancelButtonText: 'Cancel',
+                                                confirmButtonColor: '#ef4444',
+                                                cancelButtonColor: '#64748b',
+                                                customClass: { popup: 'rounded-2xl', title: 'font-bold' }
+                                            });
+
+                                            if (confirmResult.isConfirmed) {
+                                                const attempts = (ticket.ictRecommendation || '').match(/Taken \d+:/g)?.length || 0;
+                                                const reportText = `Problem Still Exists Report:\nReason: ${reason}${details ? '\nDetails: ' + details : ''}`;
+                                                
+                                                if (attempts >= 2) {
+                                                    const escResult = await ConfirmModal.fire({
+                                                        text: 'Problem still exists after 2 attempts. Escalate to ICT Head?'
+                                                    });
+                                                    if (escResult.isConfirmed) {
+                                                        changeTicketStatus(ticket.id, 'ESCALATED', ticket.assignedToId);
+                                                        addComment(ticket.id, `${reportText}\n\nAction: Escalated ticket (Problem still exists after multiple attempts)`);
+                                                        Toast.fire({ icon: 'success', title: 'Ticket Escalated' });
+                                                    }
+                                                } else {
+                                                    changeTicketStatus(ticket.id, 'IN PROGRESS', ticket.assignedToId);
+                                                    addComment(ticket.id, `${reportText}\n\nAction: Reopened ticket (Problem still exists)`);
+                                                    Toast.fire({ icon: 'success', title: 'Ticket Reopened' });
                                                 }
-                                            } else {
-                                                handleStatusUpdate('IN PROGRESS', 'Reopened ticket (Problem still exists)');
-                                                addComment(ticket.id, reportText);
                                             }
                                         }
                                     }} className={`w-full px-5 py-3.5 border rounded-xl text-[11px] font-bold uppercase tracking-widest shadow-sm transition-all ${hasBeenEscalated ? 'bg-slate-100 border-slate-300 text-slate-400 cursor-not-allowed' : 'bg-bg border-red-500/30 text-red-500 hover:bg-red-500/10 active:scale-95'}`}>
