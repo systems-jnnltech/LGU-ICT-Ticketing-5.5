@@ -105,22 +105,22 @@ export function AdminLogin() {
 
       {/* Right Login Panel */}
       <div className="lg:w-[480px] shrink-0 flex flex-col justify-center py-12 px-6 sm:px-12 bg-bg relative">
-        <div className="mx-auto w-full max-w-sm relative">
-          <Link to="/" className="absolute -left-12 lg:-left-4 top-1/2 -translate-y-1/2 p-2 text-ink-muted hover:text-ink transition-colors hidden sm:block">
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
-          <div className="text-center mb-8 lg:hidden relative">
-            <Link to="/" className="absolute left-0 top-1/2 -translate-y-1/2 p-2 text-ink-muted hover:text-ink transition-colors">
-              <ArrowLeft className="w-5 h-5" />
+        <div className="mx-auto w-full max-w-sm">
+          <div className="mb-6">
+            <Link to="/" className="inline-flex items-center text-sm font-medium text-ink-muted hover:text-ink transition-colors">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back
             </Link>
+          </div>
+          <div className="text-center mb-8 lg:hidden">
             <div className="w-20 h-20 mx-auto bg-white rounded-full p-1 flex items-center justify-center shadow-sm mb-4">
               <img src="/LGU_LOGO1.png" alt="LGU Logo" className="w-full h-full object-contain" />
             </div>
           </div>
-          <h2 className="text-3xl font-black tracking-tight text-ink text-center lg:text-left pl-0 sm:pl-2 lg:pl-0">
+          <h2 className="text-3xl font-black tracking-tight text-ink text-center lg:text-left">
             Admin Portal
           </h2>
-          <p className="mt-2 text-sm text-ink-muted text-center lg:text-left pl-0 sm:pl-2 lg:pl-0">
+          <p className="mt-2 text-sm text-ink-muted text-center lg:text-left">
             Sign in with your email and password
           </p>
         </div>
