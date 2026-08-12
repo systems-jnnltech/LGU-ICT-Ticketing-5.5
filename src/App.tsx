@@ -42,7 +42,7 @@ function MainApp() {
 
   const renderContent = () => {
     if (currentTab === 'dashboard') {
-      return <Dashboard />;
+      return <Dashboard onViewTicket={(id) => { setSelectedTicketId(id); setCurrentTab('tickets'); }} />;
     }
     
     if (currentTab === 'departments' && profile?.role === 'system_admin') {
