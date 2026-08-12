@@ -183,7 +183,6 @@ export function Dashboard({ onViewTicket }: { onViewTicket?: (id: string) => voi
             </table>
               </div>
             </div>
-          </div>
 
           {currentUser?.role !== 'Department User' && (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 items-start">
@@ -208,11 +207,13 @@ export function Dashboard({ onViewTicket }: { onViewTicket?: (id: string) => voi
 
                 return (
                   <div key={staff.id} className={`bg-surface p-4 rounded-xl border border-border shadow-sm flex flex-col h-full ${cardClass}`}>
-                    <div className="flex justify-between items-start mb-2">
-                      <div className="w-8 h-8 rounded-full bg-border flex items-center justify-center font-bold text-[10px] text-ink">
+                    <div className="flex flex-wrap justify-between items-start gap-2 mb-3">
+                      <div className="w-8 h-8 rounded-full bg-border flex items-center justify-center font-bold text-[10px] text-ink flex-shrink-0">
                         {staff.name.split(' ').map(n => n[0]).join('').substring(0, 2)}
                       </div>
-                      <div className={`${statusClass} border text-[8px] font-bold px-1.5 py-0.5 rounded font-mono uppercase`}>{statusLabel}</div>
+                      <div className={`${statusClass} border text-[8px] font-bold px-1.5 py-0.5 rounded font-mono uppercase whitespace-nowrap`}>
+                        {statusLabel}
+                      </div>
                     </div>
                     <p className="text-[10px] font-bold text-ink">{staff.name}</p>
                     <p className={`text-lg font-bold ${active >= 6 ? 'text-red-400' : 'text-ink'}`}>
@@ -290,5 +291,6 @@ export function Dashboard({ onViewTicket }: { onViewTicket?: (id: string) => voi
           </div>
         </div>
       </div>
+    </div>
   );
 }
