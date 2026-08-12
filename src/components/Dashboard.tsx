@@ -163,7 +163,7 @@ export function Dashboard({ onViewTicket }: { onViewTicket?: (id: string) => voi
                   <tr className="text-[10px] text-ink-muted uppercase font-bold tracking-widest">
                     <th className="px-6 py-4">Ticket ID</th>
                     <th className="px-6 py-4">Subject</th>
-                    <th className="px-6 py-4">Priority</th>
+                    <th className="px-6 py-4">Status</th>
                   </tr>
                 </thead>
                 <tbody className="text-sm">
@@ -173,11 +173,13 @@ export function Dashboard({ onViewTicket }: { onViewTicket?: (id: string) => voi
                       <td className="px-6 py-5 text-ink font-medium truncate max-w-sm">{ticket.subject}</td>
                       <td className="px-6 py-5">
                         <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold tracking-widest uppercase border ${
-                          ticket.priority === 'Critical' ? 'bg-red-500/10 text-red-500 border-red-500/20' :
-                          ticket.priority === 'High' ? 'bg-orange-500/10 text-orange-500 border-orange-500/20' :
-                          ticket.priority === 'Medium' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' : 'bg-surface/10 text-ink-muted border-border'
+                          ticket.status === 'NEW' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' :
+                          ticket.status === 'IN PROGRESS' ? 'bg-orange-500/10 text-orange-500 border-orange-500/20' :
+                          ticket.status === 'ESCALATED' ? 'bg-red-500/10 text-red-500 border-red-500/20' :
+                          ticket.status === 'RESOLVED' ? 'bg-green-500/10 text-green-500 border-green-500/20' :
+                          'bg-surface border-border text-ink-muted'
                         }`}>
-                          {ticket.priority}
+                          {ticket.status}
                         </span>
                       </td>
                     </tr>
