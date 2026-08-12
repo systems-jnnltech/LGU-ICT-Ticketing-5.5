@@ -118,6 +118,13 @@ Notes: ${referralData.notes}`;
     Toast.fire({ icon: 'success', title: 'Recommendation added' });
   };
 
+  const inProgressCount = ticket.comments?.filter(c => c.text === 'System: Status changed to IN PROGRESS').length || 0;
+  const occurrences = (ticket.ictRecommendation || '').match(/Taken \d+:/g)?.length || 0;
+  const allowedRecommendations = Math.max(inProgressCount, ticket.status === 'IN PROGRESS' ? 1 : 0);
+  const hasUnusedCycle = occurrences < allowedRecommendations;
+  const isAuthorized = (currentUser?.role === 'ICT Support' && ticket.assignedToId === currentUser.id) || (currentUser?.role === 'Admin');
+  const canAddRecommendation = isAuthorized && hasUnusedCycle && ['IN PROGRESS', 'ESCALATED', 'REFERRED'].includes(ticket.status);
+
   return (
     <div className="space-y-8 max-w-[1600px] mx-auto pb-16">
       <header className="flex flex-col gap-2">
@@ -195,7 +202,7 @@ Notes: ${referralData.notes}`;
                         <CheckCircle2 className="w-4 h-4" />
                         ICT Action / Recommendation
                       </h3>
-                      {!isEditingRecommendation && (
+                      {canAddRecommendation && !isEditingRecommendation && (
                           <button 
                               onClick={() => {
                                   setRecommendationText('');
