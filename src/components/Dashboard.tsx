@@ -25,6 +25,7 @@ export function Dashboard({ onViewTicket }: { onViewTicket?: (id: string) => voi
   const totalAssets = displayedAssets.length;
   const operational = displayedAssets.filter(a => a.operationalStatus === 'Operational').length;
   const forRepair = displayedAssets.filter(a => a.operationalStatus === 'Non-Operational' || a.operationalStatus === 'Under Maintenance').length;
+  const lostMissing = displayedAssets.filter(a => a.operationalStatus === 'Lost / Missing').length;
 
   // Workload (Active tickets: Assigned + In Progress + Pending)
   const ictStaff = users.filter(u => u.role === 'ICT Support');
@@ -288,7 +289,21 @@ export function Dashboard({ onViewTicket }: { onViewTicket?: (id: string) => voi
                 <div className="bg-red-500 h-full" style={{ width: `${totalAssets > 0 ? (forRepair / totalAssets) * 100 : 0}%` }}></div>
               </div>
             </div>
+
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-slate-500"></div>
+                  <span className="text-xs text-ink font-medium">Lost / Missing</span>
+                </div>
+                <span className="text-xs font-bold text-ink">{lostMissing} Units</span>
+              </div>
+              <div className="w-full bg-border h-2 rounded-full overflow-hidden">
+                <div className="bg-slate-500 h-full" style={{ width: `${totalAssets > 0 ? (lostMissing / totalAssets) * 100 : 0}%` }}></div>
+              </div>
+            </div>
           </div>
+
         </div>
       </div>
     </div>
