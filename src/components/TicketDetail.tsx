@@ -124,6 +124,10 @@ Notes: ${referralData.notes}`;
   
   const occurrences = (ticket.ictRecommendation || '').match(/Taken \d+:/g)?.length || 0;
   
+  const hasBeenEscalated = ticket.status === 'ESCALATED' || 
+      (ticket.statusHistory || []).some(h => h.status === 'ESCALATED') ||
+      (ticket.comments || []).some(c => c.text.includes('Escalated'));
+  
   const totalActionableTransitions = inProgressCount + escalatedCount + referredCount;
   const isActionable = ['IN PROGRESS', 'ESCALATED', 'REFERRED'].includes(ticket.status);
   
@@ -468,7 +472,7 @@ Notes: ${referralData.notes}`;
                                   </button>
                                 </div>
                             </div>
-                            {['ESCALATED', 'REFERRED'].includes(ticket.status) && (
+                            {['ESCALATED', 'REFERRED', 'RESOLVED'].includes(ticket.status) && (
                                 <div className="pt-4 border-t border-border space-y-3">
                                     {ticket.status === 'ESCALATED' && (
                                         <button 
@@ -478,12 +482,22 @@ Notes: ${referralData.notes}`;
                                             Assess & Refer Externally
                                         </button>
                                     )}
-                                    <button 
-                                        onClick={() => handleStatusUpdate('RESOLVED', 'Marked ticket as Repaired / Resolved')}
-                                        className="w-full px-5 py-3.5 bg-green-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:opacity-90 shadow-sm transition-all flex items-center justify-center gap-2 active:scale-95"
-                                    >
-                                        <CheckCircle2 className="w-4 h-4" /> Mark Resolved
-                                    </button>
+                                    {['ESCALATED', 'REFERRED'].includes(ticket.status) && (
+                                        <button 
+                                            onClick={() => handleStatusUpdate('RESOLVED', 'Marked ticket as Repaired / Resolved')}
+                                            className="w-full px-5 py-3.5 bg-green-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:opacity-90 shadow-sm transition-all flex items-center justify-center gap-2 active:scale-95"
+                                        >
+                                            <CheckCircle2 className="w-4 h-4" /> Mark Resolved
+                                        </button>
+                                    )}
+                                    {ticket.status === 'RESOLVED' && hasBeenEscalated && (
+                                        <button 
+                                            onClick={() => handleStatusUpdate('CLOSED', 'Closed ticket (Escalation Resolution)')}
+                                            className="w-full px-5 py-3.5 bg-green-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:opacity-90 shadow-sm transition-all flex items-center justify-center gap-2 active:scale-95"
+                                        >
+                                            <CheckCircle2 className="w-4 h-4" /> Close Ticket
+                                        </button>
+                                    )}
                                 </div>
                             )}
                         </div>
@@ -525,6 +539,11 @@ Notes: ${referralData.notes}`;
                                     </button>
                                 </>
                             )}
+                            {ticket.status === 'RESOLVED' && hasBeenEscalated && (
+                                <button onClick={() => handleStatusUpdate('CLOSED', 'Closed ticket (Escalation Resolution)')} className="w-full px-5 py-3.5 bg-green-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:opacity-90 shadow-sm transition-all flex items-center justify-center gap-2 active:scale-95">
+                                    <CheckCircle2 className="w-4 h-4"/> Close Ticket
+                                </button>
+                            )}
                         </div>
                     )}
                     
@@ -533,24 +552,75 @@ Notes: ${referralData.notes}`;
                         <div className="flex flex-col gap-3">
                             {ticket.status === 'RESOLVED' && (
                                 <>
-                                    <button onClick={() => handleStatusUpdate('CLOSED', 'Confirmed resolution and closed the ticket')} className="w-full px-5 py-3.5 bg-green-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:opacity-90 shadow-sm transition-all flex items-center justify-center gap-2 active:scale-95">
+                                    <button 
+                                        disabled={hasBeenEscalated}
+                                        onClick={() => handleStatusUpdate('CLOSED', 'Confirmed resolution and closed the ticket')} 
+                                        className={`w-full px-5 py-3.5 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest shadow-sm transition-all flex items-center justify-center gap-2 ${hasBeenEscalated ? 'bg-slate-400 cursor-not-allowed' : 'bg-green-500 hover:opacity-90 active:scale-95'}`}
+                                    >
                                         <CheckCircle2 className="w-4 h-4"/> Confirm & Close
                                     </button>
-                                    <button onClick={async () => {
-                                        const attempts = (ticket.ictRecommendation || '').match(/Taken \d+:/g)?.length || 0;
-                                        if (attempts >= 2) {
-                                            const result = await ConfirmModal.fire({
-                                                text: 'Problem still exists after 2 attempts. Escalate to ICT Head?'
-                                            });
-                                            if (result.isConfirmed) {
-                                                changeTicketStatus(ticket.id, 'ESCALATED', ticket.assignedToId);
-                                                addComment(ticket.id, 'Action: Escalated ticket (Problem still exists after multiple attempts)');
-                                                Toast.fire({ icon: 'success', title: 'Ticket Escalated' });
+                                    <button 
+                                        disabled={hasBeenEscalated}
+                                        onClick={async () => {
+                                        const result = await Swal.fire({
+                                            title: 'Why does the problem still exist?',
+                                            html: `
+                                                <div class="text-left space-y-4 font-sans mt-2">
+                                                    <div>
+                                                        <label class="block text-[10px] font-bold uppercase tracking-widest text-ink-muted mb-2">Reason (Required)</label>
+                                                        <select id="swal-reason" class="w-full px-4 py-3 bg-bg border border-border rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-accent/50 appearance-none">
+                                                            <option value="">Select a reason...</option>
+                                                            <option value="Problem still occurs">Problem still occurs</option>
+                                                            <option value="Partially resolved">Partially resolved</option>
+                                                            <option value="Different problem occurred">Different problem occurred</option>
+                                                            <option value="Asset still unusable">Asset still unusable</option>
+                                                            <option value="Issue comes back intermittently">Issue comes back intermittently</option>
+                                                            <option value="Other">Other</option>
+                                                        </select>
+                                                    </div>
+                                                    <div>
+                                                        <label class="block text-[10px] font-bold uppercase tracking-widest text-ink-muted mb-2">Additional Details (Optional)</label>
+                                                        <textarea id="swal-details" class="w-full px-4 py-3 bg-bg border border-border rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-accent/50 resize-none" rows="3" placeholder="Provide any additional context..."></textarea>
+                                                    </div>
+                                                </div>
+                                            `,
+                                            showCancelButton: true,
+                                            confirmButtonText: 'Submit Problem Report',
+                                            cancelButtonText: 'Cancel',
+                                            confirmButtonColor: '#ef4444',
+                                            cancelButtonColor: '#64748b',
+                                            customClass: { popup: 'rounded-2xl', title: 'font-bold' },
+                                            preConfirm: () => {
+                                                const reason = (document.getElementById('swal-reason') as HTMLSelectElement).value;
+                                                const details = (document.getElementById('swal-details') as HTMLTextAreaElement).value;
+                                                if (!reason) {
+                                                    Swal.showValidationMessage('Please select a reason');
+                                                    return false;
+                                                }
+                                                return { reason, details };
                                             }
-                                        } else {
-                                            handleStatusUpdate('IN PROGRESS', 'Reopened ticket (Problem still exists)');
+                                        });
+
+                                        if (result.isConfirmed) {
+                                            const { reason, details } = result.value;
+                                            const attempts = (ticket.ictRecommendation || '').match(/Taken \d+:/g)?.length || 0;
+                                            const reportText = `Problem Still Exists Report:\nReason: ${reason}${details ? '\nDetails: ' + details : ''}`;
+                                            
+                                            if (attempts >= 2) {
+                                                const escResult = await ConfirmModal.fire({
+                                                    text: 'Problem still exists after 2 attempts. Escalate to ICT Head?'
+                                                });
+                                                if (escResult.isConfirmed) {
+                                                    changeTicketStatus(ticket.id, 'ESCALATED', ticket.assignedToId);
+                                                    addComment(ticket.id, `${reportText}\n\nAction: Escalated ticket (Problem still exists after multiple attempts)`);
+                                                    Toast.fire({ icon: 'success', title: 'Ticket Escalated' });
+                                                }
+                                            } else {
+                                                handleStatusUpdate('IN PROGRESS', 'Reopened ticket (Problem still exists)');
+                                                addComment(ticket.id, reportText);
+                                            }
                                         }
-                                    }} className="w-full px-5 py-3.5 bg-bg border border-red-500/30 text-red-500 rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-red-500/10 shadow-sm transition-all active:scale-95">
+                                    }} className={`w-full px-5 py-3.5 border rounded-xl text-[11px] font-bold uppercase tracking-widest shadow-sm transition-all ${hasBeenEscalated ? 'bg-slate-100 border-slate-300 text-slate-400 cursor-not-allowed' : 'bg-bg border-red-500/30 text-red-500 hover:bg-red-500/10 active:scale-95'}`}>
                                         Problem Still Exists
                                     </button>
                                 </>
