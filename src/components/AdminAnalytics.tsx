@@ -154,195 +154,209 @@ export function AdminAnalytics() {
   const customTooltipStyle = {
     backgroundColor: '#18181b',
     border: '1px solid #27272a',
-    borderRadius: '8px',
+    borderRadius: '12px',
     color: '#fafafa',
     fontSize: '12px',
-    fontFamily: 'monospace'
+    fontFamily: 'monospace',
+    boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3)'
   };
 
   return (
-    <div className="space-y-6">
-      <section className="flex justify-between items-start mb-6">
+    <div className="space-y-8 max-w-[1600px] mx-auto">
+      {/* Header */}
+      <section className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6 mb-2">
         <div>
-          <h1 className="font-black text-[2.5rem] tracking-[-0.05em] mb-2 text-ink">Analytics</h1>
-          <p className="text-ink-muted text-[0.9rem]">Overview of ICT support ticket metrics</p>
+          <h1 className="font-black text-[2.75rem] leading-none tracking-tighter mb-3 text-ink">Analytics</h1>
+          <p className="text-ink-muted text-sm font-medium tracking-wide">Overview of ICT support ticket metrics</p>
         </div>
         <button
           onClick={exportToExcel}
-          className="flex items-center gap-2 bg-accent text-white px-4 py-2 rounded-lg font-semibold hover:bg-accent/90 transition-colors"
+          className="flex items-center gap-2.5 bg-accent text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-sm hover:opacity-90 transition-all active:scale-95"
         >
           <Download className="w-4 h-4" />
-          Export to Excel
+          Export Report
         </button>
       </section>
 
-      {/* Filters */}
-      <div className="bg-surface border border-border p-4 rounded-2xl shadow-sm flex flex-wrap gap-4 items-end">
-        <div>
-          <label className="block text-xs font-semibold text-ink-muted mb-1">Date From</label>
-          <input 
-            type="date" 
-            value={dateFrom} 
-            onChange={e => setDateFrom(e.target.value)}
-            className="w-full bg-bg border border-border rounded-lg px-3 py-2 text-sm text-ink outline-none focus:border-accent"
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-semibold text-ink-muted mb-1">Date To</label>
-          <input 
-            type="date" 
-            value={dateTo} 
-            onChange={e => setDateTo(e.target.value)}
-            className="w-full bg-bg border border-border rounded-lg px-3 py-2 text-sm text-ink outline-none focus:border-accent"
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-semibold text-ink-muted mb-1">Priority</label>
-          <select 
-            value={priorityFilter} 
-            onChange={e => setPriorityFilter(e.target.value)}
-            className="w-full bg-bg border border-border rounded-lg px-3 py-2 text-sm text-ink outline-none focus:border-accent appearance-none"
-          >
-            <option>All Priorities</option>
-            <option>Critical</option>
-            <option>High</option>
-            <option>Medium</option>
-            <option>Low</option>
-          </select>
-        </div>
-        <div>
-          <label className="block text-xs font-semibold text-ink-muted mb-1">Department</label>
-          <select 
-            value={departmentFilter} 
-            onChange={e => setDepartmentFilter(e.target.value)}
-            className="w-full bg-bg border border-border rounded-lg px-3 py-2 text-sm text-ink outline-none focus:border-accent appearance-none"
-          >
-            <option>All Departments</option>
-            {offices.map(o => (
-              <option key={o.id} value={o.id}>{o.acronym || o.name}</option>
-            ))}
-          </select>
+      {/* Filters Area */}
+      <div className="bg-surface border border-border p-6 rounded-2xl shadow-sm">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="space-y-2">
+            <label className="block text-[10px] font-bold uppercase tracking-widest text-ink-muted">Date From</label>
+            <input 
+              type="date" 
+              value={dateFrom} 
+              onChange={e => setDateFrom(e.target.value)}
+              className="w-full bg-bg border border-border rounded-xl px-4 py-2.5 text-sm font-medium text-ink outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition-all"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="block text-[10px] font-bold uppercase tracking-widest text-ink-muted">Date To</label>
+            <input 
+              type="date" 
+              value={dateTo} 
+              onChange={e => setDateTo(e.target.value)}
+              className="w-full bg-bg border border-border rounded-xl px-4 py-2.5 text-sm font-medium text-ink outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition-all"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="block text-[10px] font-bold uppercase tracking-widest text-ink-muted">Priority</label>
+            <select 
+              value={priorityFilter} 
+              onChange={e => setPriorityFilter(e.target.value)}
+              className="w-full bg-bg border border-border rounded-xl px-4 py-2.5 text-sm font-medium text-ink outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent appearance-none transition-all cursor-pointer"
+            >
+              <option>All Priorities</option>
+              <option>Critical</option>
+              <option>High</option>
+              <option>Medium</option>
+              <option>Low</option>
+            </select>
+          </div>
+          <div className="space-y-2">
+            <label className="block text-[10px] font-bold uppercase tracking-widest text-ink-muted">Department</label>
+            <select 
+              value={departmentFilter} 
+              onChange={e => setDepartmentFilter(e.target.value)}
+              className="w-full bg-bg border border-border rounded-xl px-4 py-2.5 text-sm font-medium text-ink outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent appearance-none transition-all cursor-pointer"
+            >
+              <option>All Departments</option>
+              {offices.map(o => (
+                <option key={o.id} value={o.id}>{o.acronym || o.name}</option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
       {/* SLA Performance Summary */}
-      <div className="bg-surface border border-border p-6 rounded-2xl shadow-sm">
-        <h2 className="text-[0.9rem] font-semibold text-ink mb-4 uppercase tracking-wider font-mono">SLA Performance</h2>
-        <div className="h-px w-full bg-border mb-6"></div>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-6 text-center">
-          <div>
-            <div className="text-3xl font-black text-ink">{slaCompliance}%</div>
-            <div className="text-xs text-ink-muted mt-1 font-semibold">SLA Compliance</div>
+      <div className="bg-surface border border-border rounded-2xl shadow-sm overflow-hidden">
+        <div className="px-8 py-5 border-b border-border bg-bg/50">
+          <h2 className="text-[11px] font-bold text-ink uppercase tracking-widest">SLA Performance Benchmarks</h2>
+        </div>
+        <div className="grid grid-cols-2 lg:grid-cols-5 divide-y lg:divide-y-0 lg:divide-x divide-border">
+          <div className="p-8 text-center flex flex-col justify-center">
+            <div className="text-4xl font-black text-ink tracking-tighter">{slaCompliance}%</div>
+            <div className="text-[10px] text-ink-muted mt-2 font-bold uppercase tracking-widest">SLA Compliance</div>
           </div>
-          <div>
-            <div className="text-3xl font-black text-green-500">{withinSlaCount}</div>
-            <div className="text-xs text-ink-muted mt-1 font-semibold">Within SLA</div>
+          <div className="p-8 text-center flex flex-col justify-center">
+            <div className="text-4xl font-black text-green-500 tracking-tighter">{withinSlaCount}</div>
+            <div className="text-[10px] text-ink-muted mt-2 font-bold uppercase tracking-widest">Within SLA</div>
           </div>
-          <div>
-            <div className="text-3xl font-black text-red-500">{breachedCount}</div>
-            <div className="text-xs text-ink-muted mt-1 font-semibold">Breached</div>
+          <div className="p-8 text-center flex flex-col justify-center">
+            <div className="text-4xl font-black text-red-500 tracking-tighter">{breachedCount}</div>
+            <div className="text-[10px] text-ink-muted mt-2 font-bold uppercase tracking-widest">Breached</div>
           </div>
-          <div>
-            <div className="text-3xl font-black text-amber-500">{atRiskCount}</div>
-            <div className="text-xs text-ink-muted mt-1 font-semibold">At Risk (&lt;24h)</div>
+          <div className="p-8 text-center flex flex-col justify-center">
+            <div className="text-4xl font-black text-amber-500 tracking-tighter">{atRiskCount}</div>
+            <div className="text-[10px] text-ink-muted mt-2 font-bold uppercase tracking-widest">At Risk (&lt;24h)</div>
           </div>
-          <div>
-            <div className="text-3xl font-black text-ink">{avgResolutionHrs} hrs</div>
-            <div className="text-xs text-ink-muted mt-1 font-semibold">Avg Resolution</div>
+          <div className="p-8 text-center flex flex-col justify-center col-span-2 lg:col-span-1">
+            <div className="text-4xl font-black text-ink tracking-tighter">{avgResolutionHrs}<span className="text-xl font-bold ml-1 text-ink-muted">hrs</span></div>
+            <div className="text-[10px] text-ink-muted mt-2 font-bold uppercase tracking-widest">Avg Resolution</div>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-surface border border-border p-6 rounded-2xl shadow-sm">
-          <div className="text-[0.9rem] font-semibold flex items-center gap-2 mb-6 text-ink">
-            <div className="w-2 h-2 bg-accent rounded-full"></div>
-            Tickets by Status
+      {/* Charts Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        {/* Status Pie Chart */}
+        <div className="bg-surface border border-border rounded-2xl shadow-sm flex flex-col overflow-hidden">
+          <div className="px-6 py-5 border-b border-border bg-bg/50 flex items-center gap-3">
+            <div className="w-2 h-4 bg-accent rounded-[1px]"></div>
+            <h3 className="text-[11px] font-bold uppercase tracking-widest text-ink">Tickets by Status</h3>
           </div>
-          <div className="h-64">
+          <div className="p-6 h-72 flex-1">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={statusData}
                   cx="50%"
                   cy="50%"
-                  innerRadius={60}
-                  outerRadius={80}
-                  paddingAngle={5}
+                  innerRadius={75}
+                  outerRadius={100}
+                  paddingAngle={4}
                   dataKey="value"
+                  stroke="none"
                 >
                   {statusData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={statusColors[entry.name] || '#a1a1aa'} />
                   ))}
                 </Pie>
-                <Tooltip contentStyle={customTooltipStyle} itemStyle={{ color: '#fafafa' }} />
-                <Legend iconType="circle" wrapperStyle={{ fontSize: '12px', color: '#a1a1aa' }} />
+                <Tooltip contentStyle={customTooltipStyle} itemStyle={{ color: '#fafafa', fontWeight: 600 }} />
+                <Legend iconType="circle" wrapperStyle={{ fontSize: '11px', fontWeight: 600, color: '#a1a1aa', paddingTop: '20px' }} />
               </PieChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        <div className="bg-surface border border-border p-6 rounded-2xl shadow-sm">
-          <div className="text-[0.9rem] font-semibold flex items-center gap-2 mb-6 text-ink">
-            <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-            Tickets by Category
+        {/* Active Tickets SLA Pie Chart */}
+        <div className="bg-surface border border-border rounded-2xl shadow-sm flex flex-col overflow-hidden">
+          <div className="px-6 py-5 border-b border-border bg-bg/50 flex items-center gap-3">
+            <div className="w-2 h-4 bg-purple-400 rounded-[1px]"></div>
+            <h3 className="text-[11px] font-bold uppercase tracking-widest text-ink">Active SLA Status</h3>
           </div>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={categoryData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
-                <XAxis dataKey="name" stroke="#a1a1aa" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="#a1a1aa" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
-                <Tooltip cursor={{ fill: 'rgba(255,255,255,0.05)' }} contentStyle={customTooltipStyle} />
-                <Bar dataKey="count" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={40} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        <div className="bg-surface border border-border p-6 rounded-2xl shadow-sm">
-          <div className="text-[0.9rem] font-semibold flex items-center gap-2 mb-6 text-ink">
-            <div className="w-2 h-2 bg-orange-400 rounded-full"></div>
-            Tickets by Priority
-          </div>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={priorityData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
-                <XAxis dataKey="name" stroke="#a1a1aa" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="#a1a1aa" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
-                <Tooltip cursor={{ fill: 'rgba(255,255,255,0.05)' }} contentStyle={customTooltipStyle} />
-                <Bar dataKey="count" fill="#f97316" radius={[4, 4, 0, 0]} barSize={40} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        <div className="bg-surface border border-border p-6 rounded-2xl shadow-sm">
-          <div className="text-[0.9rem] font-semibold flex items-center gap-2 mb-6 text-ink">
-            <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
-            Active Tickets SLA Status
-          </div>
-          <div className="h-64">
+          <div className="p-6 h-72 flex-1">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={slaDataChart}
                   cx="50%"
                   cy="50%"
-                  innerRadius={60}
-                  outerRadius={80}
-                  paddingAngle={5}
+                  innerRadius={75}
+                  outerRadius={100}
+                  paddingAngle={4}
                   dataKey="value"
+                  stroke="none"
                 >
                   {slaDataChart.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={slaColorsChart[entry.name] || '#a1a1aa'} />
                   ))}
                 </Pie>
-                <Tooltip contentStyle={customTooltipStyle} itemStyle={{ color: '#fafafa' }} />
-                <Legend iconType="circle" wrapperStyle={{ fontSize: '12px', color: '#a1a1aa' }} />
+                <Tooltip contentStyle={customTooltipStyle} itemStyle={{ color: '#fafafa', fontWeight: 600 }} />
+                <Legend iconType="circle" wrapperStyle={{ fontSize: '11px', fontWeight: 600, color: '#a1a1aa', paddingTop: '20px' }} />
               </PieChart>
             </ResponsiveContainer>
           </div>
         </div>
+
+        {/* Category Bar Chart */}
+        <div className="bg-surface border border-border rounded-2xl shadow-sm flex flex-col overflow-hidden">
+          <div className="px-6 py-5 border-b border-border bg-bg/50 flex items-center gap-3">
+            <div className="w-2 h-4 bg-blue-400 rounded-[1px]"></div>
+            <h3 className="text-[11px] font-bold uppercase tracking-widest text-ink">Tickets by Category</h3>
+          </div>
+          <div className="p-6 h-80 flex-1">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={categoryData} margin={{ top: 20, right: 10, left: -20, bottom: 0 }}>
+                <XAxis dataKey="name" stroke="#71717a" fontSize={11} fontWeight={600} tickLine={false} axisLine={false} dy={10} />
+                <YAxis stroke="#71717a" fontSize={11} fontWeight={600} tickLine={false} axisLine={false} allowDecimals={false} />
+                <Tooltip cursor={{ fill: 'rgba(255,255,255,0.03)' }} contentStyle={customTooltipStyle} />
+                <Bar dataKey="count" fill="#3b82f6" radius={[6, 6, 0, 0]} maxBarSize={50} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Priority Bar Chart */}
+        <div className="bg-surface border border-border rounded-2xl shadow-sm flex flex-col overflow-hidden">
+          <div className="px-6 py-5 border-b border-border bg-bg/50 flex items-center gap-3">
+            <div className="w-2 h-4 bg-orange-400 rounded-[1px]"></div>
+            <h3 className="text-[11px] font-bold uppercase tracking-widest text-ink">Tickets by Priority</h3>
+          </div>
+          <div className="p-6 h-80 flex-1">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={priorityData} margin={{ top: 20, right: 10, left: -20, bottom: 0 }}>
+                <XAxis dataKey="name" stroke="#71717a" fontSize={11} fontWeight={600} tickLine={false} axisLine={false} dy={10} />
+                <YAxis stroke="#71717a" fontSize={11} fontWeight={600} tickLine={false} axisLine={false} allowDecimals={false} />
+                <Tooltip cursor={{ fill: 'rgba(255,255,255,0.03)' }} contentStyle={customTooltipStyle} />
+                <Bar dataKey="count" fill="#f97316" radius={[6, 6, 0, 0]} maxBarSize={50} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
       </div>
     </div>
   );
