@@ -447,50 +447,59 @@ export function AssetDetail({
                     key={ticket.id}
                     className="p-6 md:p-8 hover:bg-bg/50 transition-colors"
                   >
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-2">
-                      <div className="flex items-center space-x-3">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex flex-wrap items-center gap-3">
                         <span className="font-bold text-sm text-accent font-mono tracking-wider bg-accent/10 px-2 py-0.5 rounded border border-accent/20">
                           #{ticket.ticketNumber}
                         </span>
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded tracking-widest uppercase border border-border bg-surface text-ink">
-                          {ticket.status}
-                        </span>
+                        <span className="font-bold text-sm text-ink">{ticket.subject}</span>
                       </div>
-                      <span className="text-[11px] font-bold text-ink-muted uppercase tracking-widest">
-                        {format(new Date(ticket.createdAt), "MMM d, yyyy • h:mm a")}
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded tracking-widest uppercase border ${
+                          ticket.status === 'CLOSED' ? 'bg-surface border-border text-ink-muted' :
+                          ticket.status === 'RESOLVED' ? 'bg-green-500/10 border-green-500/20 text-green-500' :
+                          'bg-blue-500/10 border-blue-500/20 text-blue-500'
+                      }`}>
+                        {ticket.status}
                       </span>
                     </div>
-                    <div className="font-bold text-sm text-ink mb-1.5">
-                      {ticket.subject}
-                    </div>
-                    <p className="text-sm font-medium text-ink-muted leading-relaxed mb-5 max-w-4xl">
+                    
+                    <p className="text-sm font-medium text-ink-muted leading-relaxed mb-6 max-w-4xl line-clamp-2">
                       {ticket.description}
                     </p>
                     
-                    {ticket.ictRecommendation && (
-                      <div className="bg-bg/50 p-5 rounded-xl border border-border mt-4">
-                        <div className="text-[10px] font-bold text-ink uppercase tracking-widest mb-2 flex items-center gap-2">
-                          <div className="w-1.5 h-1.5 bg-accent rounded-full"></div>
-                          ICT Action / Resolution
-                        </div>
-                        <p className="text-sm font-medium text-ink-muted whitespace-pre-wrap">{ticket.ictRecommendation}</p>
-                      </div>
-                    )}
-                    
-                    {ticket.comments && ticket.comments.filter(c => !c.text.startsWith('System: Status changed to')).length > 0 && (
-                      <div className="mt-6 space-y-4">
-                        <div className="text-[10px] font-bold text-ink uppercase tracking-widest mb-3 border-b border-border pb-2">Support Logs</div>
-                        {ticket.comments.filter(c => !c.text.startsWith('System: Status changed to')).map(comment => {
-                          const author = users.find(u => u.id === comment.userId);
-                          return (
-                            <div key={comment.id} className="text-sm border-l-2 border-accent/50 pl-4 py-1">
-                              <span className="font-bold text-ink mr-2">{author?.name || 'Unknown'}</span>
-                              <span className="text-ink-muted font-medium">{comment.text}</span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
+                    {/* Simplified Timeline from Creation to Resolution */}
+                    <div className="relative pl-5 space-y-5 before:absolute before:left-[5px] before:top-2 before:bottom-2 before:w-px before:bg-border">
+                       {/* Created */}
+                       <div className="relative">
+                         <div className="absolute -left-[24px] top-1.5 w-2 h-2 rounded-full bg-border ring-4 ring-bg"></div>
+                         <div className="flex flex-wrap items-center gap-2">
+                           <span className="text-xs font-bold text-ink uppercase tracking-widest">Ticket Created</span>
+                           <span className="text-[10px] font-medium text-ink-muted uppercase tracking-widest border-l border-border pl-2">{format(new Date(ticket.createdAt), "MMM d, yyyy • h:mm a")}</span>
+                         </div>
+                       </div>
+                       
+                       {/* ICT Action */}
+                       {ticket.ictRecommendation && (
+                         <div className="relative">
+                           <div className="absolute -left-[24px] top-1.5 w-2 h-2 rounded-full bg-orange-500 ring-4 ring-bg"></div>
+                           <div className="flex flex-col gap-1.5">
+                             <span className="text-xs font-bold text-orange-500 uppercase tracking-widest">ICT Action / Resolution</span>
+                             <p className="text-sm font-medium text-ink-muted whitespace-pre-wrap bg-surface border border-border p-3 rounded-lg shadow-sm">{ticket.ictRecommendation}</p>
+                           </div>
+                         </div>
+                       )}
+
+                       {/* Resolved / Closed */}
+                       {['RESOLVED', 'CLOSED'].includes(ticket.status) && (
+                         <div className="relative">
+                           <div className="absolute -left-[24px] top-1.5 w-2 h-2 rounded-full bg-green-500 ring-4 ring-bg"></div>
+                           <div className="flex flex-wrap items-center gap-2">
+                             <span className="text-xs font-bold text-green-500 uppercase tracking-widest">{ticket.status === 'CLOSED' ? 'Ticket Closed' : 'Ticket Resolved'}</span>
+                             <span className="text-[10px] font-medium text-ink-muted uppercase tracking-widest border-l border-border pl-2">{format(new Date(ticket.updatedAt), "MMM d, yyyy • h:mm a")}</span>
+                           </div>
+                         </div>
+                       )}
+                    </div>
                   </div>
                 ))}
               </>
