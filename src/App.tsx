@@ -9,7 +9,8 @@ import { CreateTicket } from './components/CreateTicket';
 import { AssetList, AssetDetail } from './components/AssetModule';
 import { CreateAsset } from './components/CreateAsset';
 import { EmployeeLogin } from './pages/EmployeeLogin';
-import { IctLogin } from './pages/IctLogin';
+import { AdminLogin } from './pages/AdminLogin';
+import { SupportLogin } from './pages/SupportLogin';
 import { AdminDepartments } from './components/AdminDepartments';
 import { AdminAnalytics } from './components/AdminAnalytics';
 import { AdminUsers } from './components/AdminUsers';
@@ -117,7 +118,8 @@ export default function App() {
           <Toaster position="top-right" richColors />
           <Routes>
             <Route path="/" element={<EmployeeLogin />} />
-            <Route path="/ict-login" element={<IctLogin />} />
+            <Route path="/admin" element={<AdminLogin />} />
+            <Route path="/support" element={<SupportLogin />} />
             <Route element={<ProtectedRoute />}>
               <Route path="/dashboard" element={<MainApp />} />
             </Route>
