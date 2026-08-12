@@ -51,35 +51,38 @@ export function TicketsList({ onSelectTicket, onCreateTicket }: { onSelectTicket
   };
 
   return (
-    <div className="space-y-6">
-      <div className="bg-surface rounded-xl shadow-sm border border-border overflow-hidden">
-        <div className="p-4 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-8 max-w-[1600px] mx-auto">
+      <div className="bg-surface rounded-2xl shadow-sm border border-border overflow-hidden">
+        
+        {/* Header Area */}
+        <div className="px-6 py-5 border-b border-border bg-bg/50 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
            {currentUser?.role === 'ICT Support' ? (
-             <div className="flex bg-bg rounded-lg p-1 border border-border">
+             <div className="flex bg-bg rounded-xl p-1.5 border border-border shadow-sm">
                <button 
                  onClick={() => setIctView('MY_TASKS')}
-                 className={`px-4 py-1.5 rounded-md text-xs font-bold transition-colors ${ictView === 'MY_TASKS' ? 'bg-surface text-ink shadow-sm' : 'text-ink-muted hover:text-ink'}`}
+                 className={`px-5 py-2 rounded-lg text-[11px] uppercase tracking-widest font-bold transition-all ${ictView === 'MY_TASKS' ? 'bg-surface text-ink shadow-sm' : 'text-ink-muted hover:text-ink'}`}
                >
                  My Tasks
                </button>
                <button 
                  onClick={() => setIctView('ALL_TICKETS')}
-                 className={`px-4 py-1.5 rounded-md text-xs font-bold transition-colors ${ictView === 'ALL_TICKETS' ? 'bg-surface text-ink shadow-sm' : 'text-ink-muted hover:text-ink'}`}
+                 className={`px-5 py-2 rounded-lg text-[11px] uppercase tracking-widest font-bold transition-all ${ictView === 'ALL_TICKETS' ? 'bg-surface text-ink shadow-sm' : 'text-ink-muted hover:text-ink'}`}
                >
                  Ticket History
                </button>
              </div>
            ) : (
-             <h2 className="font-bold text-sm text-ink flex items-center gap-2">
-               <div className="w-2 h-2 bg-accent rounded-full"></div>
-               Support Tickets
+             <h2 className="font-bold text-sm text-ink flex items-center gap-3">
+               <div className="w-2 h-4 bg-accent rounded-[1px]"></div>
+               <span className="uppercase tracking-widest text-[11px]">Support Tickets</span>
              </h2>
            )}
-           <div className="flex items-center gap-3">
-             <div className="flex items-center space-x-2 bg-bg px-3 py-1.5 rounded-lg border border-border">
-               <Filter className="w-3.5 h-3.5 text-ink-muted" />
+           
+           <div className="flex items-center gap-4">
+             <div className="flex items-center space-x-2 bg-bg px-4 py-2.5 rounded-xl border border-border shadow-sm transition-all focus-within:border-accent/50 focus-within:ring-1 focus-within:ring-accent/50">
+               <Filter className="w-4 h-4 text-ink-muted" />
                <select 
-                 className="bg-transparent text-xs font-bold text-ink outline-none cursor-pointer"
+                 className="bg-transparent text-[11px] uppercase tracking-widest font-bold text-ink outline-none cursor-pointer appearance-none pr-4"
                  value={filterStatus}
                  onChange={(e) => setFilterStatus(e.target.value)}
                >
@@ -97,31 +100,32 @@ export function TicketsList({ onSelectTicket, onCreateTicket }: { onSelectTicket
              {currentUser?.role === 'Department User' && (
                 <button
                   onClick={onCreateTicket}
-                  className="bg-accent text-white text-xs px-4 py-2 rounded-lg font-bold flex items-center space-x-1 border border-accent hover:brightness-110"
+                  className="bg-accent text-white text-[11px] uppercase tracking-widest px-5 py-2.5 rounded-xl font-bold flex items-center space-x-2 border border-accent hover:opacity-90 active:scale-95 transition-all shadow-sm"
                 >
-                  <Plus className="w-3.5 h-3.5" />
+                  <Plus className="w-4 h-4" />
                   <span>New Ticket</span>
                 </button>
              )}
            </div>
         </div>
 
+        {/* Data Table */}
         <div className="overflow-x-auto">
-          <table className="w-full text-left min-w-[800px]">
-          <thead className="bg-surface/5 border-b border-border">
-            <tr className="text-[10px] text-ink-muted uppercase font-bold font-mono">
-              <th className="px-4 py-3">Ticket ID & Subject</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Priority</th>
-              <th className="px-4 py-3">Details</th>
-              <th className="px-4 py-3 text-right">Action</th>
+          <table className="w-full text-left min-w-[900px] border-collapse">
+          <thead className="bg-surface border-b border-border">
+            <tr className="text-[10px] text-ink-muted uppercase font-bold tracking-widest">
+              <th className="px-6 py-4 font-bold">Ticket ID & Subject</th>
+              <th className="px-6 py-4 font-bold">Status</th>
+              <th className="px-6 py-4 font-bold">Priority</th>
+              <th className="px-6 py-4 font-bold">Details</th>
+              <th className="px-6 py-4 font-bold text-right">Action</th>
             </tr>
           </thead>
-          <tbody className="text-xs">
+          <tbody className="text-sm">
             {filteredTickets.length === 0 ? (
               <tr>
-                <td colSpan={5} className="p-8 text-center text-ink-muted">
-                  No tickets found.
+                <td colSpan={5} className="p-12 text-center text-ink-muted font-medium">
+                  No tickets found matching your criteria.
                 </td>
               </tr>
             ) : (
@@ -133,46 +137,46 @@ export function TicketsList({ onSelectTicket, onCreateTicket }: { onSelectTicket
                   <tr 
                     key={ticket.id} 
                     onClick={() => onSelectTicket(ticket.id)}
-                    className="border-b border-white/5 hover:bg-surface/5 cursor-pointer transition-colors group"
+                    className="border-b border-border group-last:border-none hover:bg-bg/50 cursor-pointer transition-colors group"
                   >
-                    <td className="px-4 py-3">
-                      <div className="font-bold text-accent font-mono">{ticket.ticketNumber}</div>
-                      <div className="text-ink truncate max-w-xs">{ticket.subject}</div>
+                    <td className="px-6 py-5">
+                      <div className="font-bold text-accent font-mono text-[13px] mb-1">{ticket.ticketNumber}</div>
+                      <div className="text-ink font-semibold truncate max-w-sm">{ticket.subject}</div>
                     </td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold font-mono uppercase ${getStatusColor(ticket.status)}`}>
+                    <td className="px-6 py-5">
+                      <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold tracking-widest uppercase ${getStatusColor(ticket.status)}`}>
                         {ticket.status}
                       </span>
                     </td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold font-mono uppercase ${getPriorityColor(ticket.priority)}`}>
+                    <td className="px-6 py-5">
+                      <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold tracking-widest uppercase ${getPriorityColor(ticket.priority)}`}>
                         {ticket.priority}
                       </span>
-                      <div className="mt-1 flex items-center space-x-1">
+                      <div className="mt-2.5 flex items-center space-x-1">
                         {(() => {
                           const sla = getTicketSLA(ticket);
-                          let slaColor = 'text-green-400';
+                          let slaColor = 'text-green-500';
                           if (sla.isClosed) {
-                            slaColor = sla.isBreached ? 'text-red-400' : 'text-green-400';
+                            slaColor = sla.isBreached ? 'text-red-500' : 'text-green-500';
                           } else {
-                            if (sla.isBreached) slaColor = 'text-red-400';
-                            else if (sla.remainingMin < 60) slaColor = 'text-amber-400';
+                            if (sla.isBreached) slaColor = 'text-red-500';
+                            else if (sla.remainingMin < 60) slaColor = 'text-amber-500';
                           }
                           return (
-                            <span className={`flex items-center space-x-1 text-[10px] font-mono ${slaColor}`}>
-                              <Clock className="w-3 h-3" />
+                            <span className={`flex items-center space-x-1.5 text-[11px] font-mono font-bold ${slaColor}`}>
+                              <Clock className="w-3.5 h-3.5" />
                               <span>{sla.label}</span>
                             </span>
                           );
                         })()}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-[10px] text-ink-muted">
-                      <div>Req: <span className="text-ink">{requester?.name}</span></div>
+                    <td className="px-6 py-5 text-xs text-ink-muted font-medium">
+                      <div className="mb-1">Req: <span className="text-ink font-semibold">{requester?.name}</span></div>
                       <div>{format(new Date(ticket.updatedAt), 'MMM d, h:mm a')}</div>
                     </td>
-                    <td className="px-4 py-3 text-right">
-                      <button className="bg-surface/10 text-ink px-3 py-1 rounded text-[10px] font-bold uppercase group-hover:bg-accent group-hover:text-white transition-colors border border-white/10 group-hover:border-accent">
+                    <td className="px-6 py-5 text-right">
+                      <button className="bg-surface text-ink px-4 py-2 rounded-lg text-[10px] font-bold tracking-widest uppercase group-hover:bg-accent group-hover:text-white transition-all border border-border shadow-sm group-hover:border-accent">
                         View
                       </button>
                     </td>
