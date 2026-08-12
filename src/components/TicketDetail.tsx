@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAppContext } from '../store/AppContext';
-import { ArrowLeft, Clock, User, Monitor, AlertCircle, CheckCircle2, Send } from 'lucide-react';
+import { ArrowLeft, Clock, User, Monitor, AlertCircle, CheckCircle2, Send, Activity } from 'lucide-react';
 import { format } from 'date-fns';
 import { getTicketSLA } from '../utils/sla';
 import { Toast, ConfirmModal } from '../lib/toast';
@@ -30,6 +30,9 @@ export function TicketDetail({ ticketId, onBack }: { ticketId: string, onBack: (
     e.preventDefault();
     if (!ticket) return;
     changeTicketStatus(ticket.id, 'REFERRED', ticket.assignedToId);
+    
+    // Log the action explicitly
+    addComment(ticket.id, `Action: Assessed and referred to external technician`);
     
     const commentText = `Referred to External Technician
 Reason: ${referralData.reason}
@@ -68,17 +71,22 @@ Notes: ${referralData.notes}`;
       });
       if (result.isConfirmed) {
         changeTicketStatus(ticket.id, 'ASSIGNED', selectedAssignee);
+        const assignedUser = users.find(u => u.id === selectedAssignee);
+        addComment(ticket.id, `Action: Assigned ticket to ${assignedUser?.name}`);
         Toast.fire({ icon: 'success', title: 'Ticket assigned successfully' });
       }
     }
   };
 
-  const handleStatusUpdate = async (newStatus: any) => {
+  const handleStatusUpdate = async (newStatus: any, actionDesc?: string) => {
     const result = await ConfirmModal.fire({
       text: `Are you sure you want to change status to ${newStatus}?`
     });
     if (result.isConfirmed) {
       changeTicketStatus(ticket.id, newStatus, ticket.assignedToId);
+      if (actionDesc) {
+          addComment(ticket.id, `Action: ${actionDesc}`);
+      }
       Toast.fire({ icon: 'success', title: `Status updated to ${newStatus}` });
     }
   };
@@ -248,7 +256,7 @@ Notes: ${referralData.notes}`;
               <div className="px-6 py-5 border-b border-border bg-bg/50 flex justify-between items-center">
                   <h3 className="text-[11px] font-bold text-ink uppercase tracking-widest">Discussion & Activity</h3>
                   <span className="text-[10px] font-bold uppercase tracking-widest bg-bg border border-border text-ink-muted px-3 py-1 rounded-md shadow-sm">
-                    {ticket.comments?.filter(c => !c.text.startsWith('System: Status changed to')).length || 0} Messages
+                    {ticket.comments?.filter(c => !c.text.startsWith('System: Status changed to')).length || 0} Events
                   </span>
               </div>
               <div className="p-8 space-y-8 flex-1">
@@ -256,6 +264,27 @@ Notes: ${referralData.notes}`;
                       ticket.comments.filter(c => !c.text.startsWith('System: Status changed to')).map(comment => {
                           const commentUser = users.find(u => u.id === comment.userId);
                           const isOwn = comment.userId === currentUser?.id;
+                          const isAction = comment.text.startsWith('Action:');
+                          const displayText = isAction ? comment.text.replace('Action: ', '') : comment.text;
+                          
+                          if (isAction) {
+                              return (
+                                  <div key={comment.id} className="flex justify-center my-6">
+                                      <div className="bg-surface border border-border px-4 py-3 rounded-xl flex items-center gap-3 w-full shadow-sm max-w-xl">
+                                          <div className="w-7 h-7 rounded-full bg-bg border border-border text-ink-muted flex items-center justify-center shrink-0">
+                                              <Activity className="w-3.5 h-3.5" />
+                                          </div>
+                                          <div className="text-left flex-1 flex flex-wrap items-center gap-1.5">
+                                              <span className="text-[11px] font-bold text-ink uppercase tracking-widest">{commentUser?.name}</span>
+                                              <span className="text-[12px] font-medium text-ink-muted">{displayText}</span>
+                                          </div>
+                                          <div className="text-[9px] font-bold text-ink-muted uppercase tracking-widest shrink-0">
+                                              {format(new Date(comment.createdAt), 'MMM d, h:mm a')}
+                                          </div>
+                                      </div>
+                                  </div>
+                              );
+                          }
                           
                           return (
                               <div key={comment.id} className={`flex gap-4 ${isOwn ? 'flex-row-reverse' : ''}`}>
@@ -293,7 +322,7 @@ Notes: ${referralData.notes}`;
                               type="text"
                               value={newCommentText}
                               onChange={(e) => setNewCommentText(e.target.value)}
-                              placeholder="Type a message or update..."
+                              placeholder="Type a message..."
                               className="flex-1 bg-surface border border-border rounded-xl pl-5 pr-14 py-3.5 text-sm font-medium outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent shadow-sm"
                           />
                           <button 
@@ -395,6 +424,7 @@ Notes: ${referralData.notes}`;
                                       });
                                       if (result.isConfirmed) {
                                         updateTicketPriority(ticket.id, newPriority);
+                                        addComment(ticket.id, `Action: Updated ticket priority to ${newPriority}`);
                                         Toast.fire({ icon: 'success', title: 'Priority updated' });
                                       }
                                     }}
@@ -439,7 +469,7 @@ Notes: ${referralData.notes}`;
                                         </button>
                                     )}
                                     <button 
-                                        onClick={() => handleStatusUpdate('RESOLVED')}
+                                        onClick={() => handleStatusUpdate('RESOLVED', 'Marked ticket as Repaired / Resolved')}
                                         className="w-full px-5 py-3.5 bg-green-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:opacity-90 shadow-sm transition-all flex items-center justify-center gap-2 active:scale-95"
                                     >
                                         <CheckCircle2 className="w-4 h-4" /> Mark Resolved
@@ -453,12 +483,12 @@ Notes: ${referralData.notes}`;
                     {currentUser?.role === 'ICT Support' && ticket.assignedToId === currentUser.id && (
                         <div className="flex flex-col gap-3">
                             {ticket.status === 'ASSIGNED' && (
-                                <button onClick={() => handleStatusUpdate('IN PROGRESS')} className="w-full px-5 py-3.5 bg-accent text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:opacity-90 shadow-sm transition-all active:scale-95">
+                                <button onClick={() => handleStatusUpdate('IN PROGRESS', 'Started work on the ticket')} className="w-full px-5 py-3.5 bg-accent text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:opacity-90 shadow-sm transition-all active:scale-95">
                                     Start Work
                                 </button>
                             )}
                             {ticket.status === 'IN PROGRESS' && (
-                                <button onClick={() => handleStatusUpdate('RESOLVED')} className="w-full px-5 py-3.5 bg-green-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:opacity-90 shadow-sm transition-all flex items-center justify-center gap-2 active:scale-95">
+                                <button onClick={() => handleStatusUpdate('RESOLVED', 'Marked ticket as Repaired / Resolved')} className="w-full px-5 py-3.5 bg-green-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:opacity-90 shadow-sm transition-all flex items-center justify-center gap-2 active:scale-95">
                                     <CheckCircle2 className="w-4 h-4"/> Mark Resolved
                                 </button>
                             )}
@@ -480,7 +510,7 @@ Notes: ${referralData.notes}`;
                                     }} className="w-full px-5 py-3.5 bg-purple-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:opacity-90 shadow-sm transition-all active:scale-95">
                                         View Technician Details
                                     </button>
-                                    <button onClick={() => handleStatusUpdate('RESOLVED')} className="w-full px-5 py-3.5 bg-green-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:opacity-90 shadow-sm transition-all flex items-center justify-center gap-2 active:scale-95">
+                                    <button onClick={() => handleStatusUpdate('RESOLVED', 'Marked ticket as Repaired / Resolved')} className="w-full px-5 py-3.5 bg-green-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:opacity-90 shadow-sm transition-all flex items-center justify-center gap-2 active:scale-95">
                                         <CheckCircle2 className="w-4 h-4"/> Mark Resolved
                                     </button>
                                 </>
@@ -493,7 +523,7 @@ Notes: ${referralData.notes}`;
                         <div className="flex flex-col gap-3">
                             {ticket.status === 'RESOLVED' && (
                                 <>
-                                    <button onClick={() => handleStatusUpdate('CLOSED')} className="w-full px-5 py-3.5 bg-green-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:opacity-90 shadow-sm transition-all flex items-center justify-center gap-2 active:scale-95">
+                                    <button onClick={() => handleStatusUpdate('CLOSED', 'Confirmed resolution and closed the ticket')} className="w-full px-5 py-3.5 bg-green-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:opacity-90 shadow-sm transition-all flex items-center justify-center gap-2 active:scale-95">
                                         <CheckCircle2 className="w-4 h-4"/> Confirm & Close
                                     </button>
                                     <button onClick={async () => {
@@ -504,10 +534,11 @@ Notes: ${referralData.notes}`;
                                             });
                                             if (result.isConfirmed) {
                                                 changeTicketStatus(ticket.id, 'ESCALATED', ticket.assignedToId);
+                                                addComment(ticket.id, 'Action: Escalated ticket (Problem still exists after multiple attempts)');
                                                 Toast.fire({ icon: 'success', title: 'Ticket Escalated' });
                                             }
                                         } else {
-                                            handleStatusUpdate('IN PROGRESS');
+                                            handleStatusUpdate('IN PROGRESS', 'Reopened ticket (Problem still exists)');
                                         }
                                     }} className="w-full px-5 py-3.5 bg-bg border border-red-500/30 text-red-500 rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-red-500/10 shadow-sm transition-all active:scale-95">
                                         Problem Still Exists
@@ -553,17 +584,30 @@ Notes: ${referralData.notes}`;
                     const isCurrent = index === currentIndex;
 
                     let timestampStr = null;
+                    let actionBy = null;
+
                     if (isCompleted || isCurrent) {
-                        if (index === 0 || index === 1) {
+                        if (index === 0) {
+                            timestampStr = ticket.createdAt;
+                            actionBy = requester?.name;
+                        } else if (index === 1) {
                             timestampStr = ticket.createdAt;
                         } else {
                             const dbStatus = step.key;
                             if (dbStatus) {
                                 const sysComment = ticket.comments?.find((c: any) => c.text === `System: Status changed to ${dbStatus}`);
-                                if (sysComment) timestampStr = sysComment.createdAt;
+                                if (sysComment) {
+                                    timestampStr = sysComment.createdAt;
+                                    const u = users.find(user => user.id === sysComment.userId);
+                                    if (u) actionBy = u.name;
+                                }
                                 else if (ticket.statusHistory) {
                                     const historyItem = ticket.statusHistory.find((h: any) => h.status === dbStatus);
-                                    if (historyItem) timestampStr = historyItem.timestamp;
+                                    if (historyItem) {
+                                        timestampStr = historyItem.timestamp;
+                                        const u = users.find(user => user.id === historyItem.userId);
+                                        if (u) actionBy = u.name;
+                                    }
                                 }
                             }
                             if (!timestampStr && isCurrent) timestampStr = ticket.updatedAt;
@@ -578,7 +622,10 @@ Notes: ${referralData.notes}`;
                         <div>
                           <p className={`text-xs font-bold leading-none ${isCompleted ? 'text-ink' : isCurrent ? 'text-accent' : 'text-ink-muted'}`}>{step.label}</p>
                           {timestampStr && (
-                             <p className="text-[10px] font-medium text-ink-muted mt-1 uppercase tracking-widest">{format(new Date(timestampStr), 'MMM d, h:mm a')}</p>
+                             <div className="mt-1">
+                               <p className="text-[10px] font-medium text-ink-muted uppercase tracking-widest">{format(new Date(timestampStr), 'MMM d, h:mm a')}</p>
+                               {actionBy && <p className="text-[9px] font-bold text-accent uppercase tracking-widest mt-0.5">by {actionBy}</p>}
+                             </div>
                           )}
                         </div>
                       </div>
