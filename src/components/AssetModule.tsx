@@ -142,7 +142,7 @@ export function AssetList({
             })}
           </tbody>
         </table>
-      </div>
+        </div>
 
       <BulkImportModal
         isOpen={isImportOpen}
@@ -261,7 +261,7 @@ export function AssetDetail({
       <div className="space-y-6">
         <div className="space-y-6">
           {/* Details */}
-          <div className="bg-surface rounded-xl shadow-sm border border-border overflow-hidden">
+          <div className="bg-surface rounded-xl shadow-sm border border-border overflow-hidden w-full">
             <div className="px-5 py-3 border-b border-border bg-bg">
               <h3 className="text-xs font-bold text-ink uppercase tracking-wider">
                 Registry Information
