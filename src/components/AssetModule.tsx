@@ -480,42 +480,57 @@ export function AssetDetail({
                          </div>
                        </div>
                        
-                       {/* ICT Action */}
-                       {ticket.ictRecommendation && (
-                         <div className="relative">
-                           <div className="absolute -left-[24px] top-1.5 w-2 h-2 rounded-full bg-orange-500 ring-4 ring-bg"></div>
-                           <div className="flex flex-col gap-1.5">
-                             <span className="text-xs font-bold text-orange-500 uppercase tracking-widest">ICT Action / Resolution</span>
-                             <p className="text-sm font-medium text-ink-muted whitespace-pre-wrap bg-surface border border-border p-3 rounded-lg shadow-sm">{ticket.ictRecommendation}</p>
-                           </div>
-                         </div>
-                       )}
-
-                       {/* Escalated */}
+                       {/* Actions & Escalation */}
                        {(() => {
+                         const actions = ticket.ictRecommendation ? ticket.ictRecommendation.split(/(?=Taken \d+:)/).filter(Boolean) : [];
                          const escalatedLog = ticket.comments?.find(c => c.text === 'System: Status changed to ESCALATED' || c.text.includes('Escalated'));
-                         if (escalatedLog) {
-                           return (
-                             <div className="relative">
-                               <div className="absolute -left-[24px] top-1.5 w-2 h-2 rounded-full bg-red-500 ring-4 ring-bg"></div>
-                               <div className="flex flex-wrap items-center gap-2">
-                                 <span className="text-xs font-bold text-red-500 uppercase tracking-widest">Ticket Escalated</span>
-                                 <span className="text-[10px] font-medium text-ink-muted uppercase tracking-widest border-l border-border pl-2">{format(new Date(escalatedLog.createdAt), "MMM d, yyyy • h:mm a")}</span>
+                         const hasEscalation = !!escalatedLog || ticket.status === 'ESCALATED';
+                         const escalationTime = escalatedLog ? escalatedLog.createdAt : ticket.updatedAt;
+
+                         return (
+                           <>
+                             {actions.map((action, idx) => {
+                               const isEscalatedAction = action.includes('ICT Head') || action.includes('Admin');
+                               const showEscalationBeforeThis = hasEscalation && idx === 1;
+
+                               return (
+                                 <React.Fragment key={idx}>
+                                   {showEscalationBeforeThis && (
+                                     <div className="relative">
+                                       <div className="absolute -left-[24px] top-1.5 w-2 h-2 rounded-full bg-red-500 ring-4 ring-bg"></div>
+                                       <div className="flex flex-wrap items-center gap-2">
+                                         <span className="text-xs font-bold text-red-500 uppercase tracking-widest">Ticket Escalated</span>
+                                         <span className="text-[10px] font-medium text-ink-muted uppercase tracking-widest border-l border-border pl-2">{format(new Date(escalationTime), "MMM d, yyyy • h:mm a")}</span>
+                                       </div>
+                                     </div>
+                                   )}
+                                   <div className="relative">
+                                     <div className={`absolute -left-[24px] top-1.5 w-2 h-2 rounded-full ${isEscalatedAction ? 'bg-red-500' : 'bg-orange-500'} ring-4 ring-bg`}></div>
+                                     <div className="flex flex-col gap-1.5">
+                                       <span className={`text-xs font-bold uppercase tracking-widest ${isEscalatedAction ? 'text-red-500' : 'text-orange-500'}`}>
+                                         {isEscalatedAction ? 'Escalated Action / Resolution' : 'ICT Action / Resolution'}
+                                       </span>
+                                       <p className="text-sm font-medium text-ink-muted whitespace-pre-wrap bg-surface border border-border p-3 rounded-lg shadow-sm">
+                                         {action.trim()}
+                                       </p>
+                                     </div>
+                                   </div>
+                                 </React.Fragment>
+                               );
+                             })}
+                             
+                             {/* Show Escalation if it happened but hasn't had a 2nd action yet */}
+                             {hasEscalation && actions.length <= 1 && (
+                               <div className="relative">
+                                 <div className="absolute -left-[24px] top-1.5 w-2 h-2 rounded-full bg-red-500 ring-4 ring-bg"></div>
+                                 <div className="flex flex-wrap items-center gap-2">
+                                   <span className="text-xs font-bold text-red-500 uppercase tracking-widest">Ticket Escalated</span>
+                                   <span className="text-[10px] font-medium text-ink-muted uppercase tracking-widest border-l border-border pl-2">{format(new Date(escalationTime), "MMM d, yyyy • h:mm a")}</span>
+                                 </div>
                                </div>
-                             </div>
-                           );
-                         } else if (ticket.status === 'ESCALATED') {
-                           return (
-                             <div className="relative">
-                               <div className="absolute -left-[24px] top-1.5 w-2 h-2 rounded-full bg-red-500 ring-4 ring-bg"></div>
-                               <div className="flex flex-wrap items-center gap-2">
-                                 <span className="text-xs font-bold text-red-500 uppercase tracking-widest">Ticket Escalated</span>
-                                 <span className="text-[10px] font-medium text-ink-muted uppercase tracking-widest border-l border-border pl-2">{format(new Date(ticket.updatedAt), "MMM d, yyyy • h:mm a")}</span>
-                               </div>
-                             </div>
-                           );
-                         }
-                         return null;
+                             )}
+                           </>
+                         );
                        })()}
 
                        {/* Resolved / Closed */}
