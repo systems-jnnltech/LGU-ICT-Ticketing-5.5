@@ -71,16 +71,11 @@ export function findOfficeForAsset(asset: any, offices: { id: string; name: stri
 
 export const mapAssetFromDB = (dbAsset: any) => ({
   id: dbAsset.id,
-
-  assetCode: dbAsset.asset_code,
-
+  assetCode: dbAsset.asset_code || dbAsset.id,
   officeId: dbAsset.department_id,
-
   equipmentType: dbAsset.equipment_type,
-
-  propertyNumber: dbAsset.property_number ?? null,
-
-  inventoryNumber: dbAsset.inventory_number ?? null,
+  propertyNumber: dbAsset.property_number || '',
+  inventoryNumber: dbAsset.inventory_number,
   brand: dbAsset.brand,
   model: dbAsset.model,
   serialNumber: dbAsset.serial_number,
@@ -94,82 +89,39 @@ export const mapAssetFromDB = (dbAsset: any) => ({
   microsoftOffice: dbAsset.microsoft_office,
   condition: dbAsset.condition,
   operationalStatus: dbAsset.operational_status,
-
-  acquisitionCost:
-    dbAsset.acquisition_cost != null
-      ? `PHP ${Number(dbAsset.acquisition_cost).toLocaleString('en-US', {
-          minimumFractionDigits: 2
-        })}`
-      : 'N/A',
-
+  acquisitionCost: dbAsset.acquisition_cost != null ? `PHP ${Number(dbAsset.acquisition_cost).toLocaleString('en-US', { minimumFractionDigits: 2 })}` : 'N/A',
   dateAcquired: dbAsset.date_acquired || 'N/A',
   dateAudited: dbAsset.date_audited || 'N/A',
   auditedBy: dbAsset.audited_by,
   remarks: dbAsset.remarks,
-
-  history: dbAsset.asset_history
-    ? dbAsset.asset_history
-        .map((h: any) => ({
-          id: h.id,
-          assetId: h.asset_id,
-          action: h.action,
-          changes: h.changes,
-          performedBy: h.performed_by,
-          createdAt: h.created_at
-        }))
-        .sort(
-          (a: any, b: any) =>
-            new Date(b.createdAt).getTime() -
-            new Date(a.createdAt).getTime()
-        )
-    : []
+  history: []
 });
 
-export const mapAssetToDB = (asset: any) => {
-  if (!asset.assetCode || String(asset.assetCode).trim() === '') {
-    throw new Error(
-      `Asset is missing assetCode. Property Number: ${asset.propertyNumber ?? 'NULL'}`
-    );
-  }
-
-  return {
-    department_id: sanitizeDepartmentId(asset.officeId),
-
-    equipment_type: asset.equipmentType,
-
-    asset_code: String(asset.assetCode).trim(),
-
-    property_number:
-      asset.propertyNumber === null ||
-      asset.propertyNumber === undefined ||
-      String(asset.propertyNumber).trim() === ''
-        ? null
-        : String(asset.propertyNumber).trim(),
-
-    inventory_number: asset.inventoryNumber || null,
-    brand: asset.brand || null,
-    model: asset.model || null,
-    serial_number: asset.serialNumber || null,
-    hostname: asset.hostname || null,
-    processor: asset.processor || null,
-    memory: asset.memory || null,
-    disk_storage: asset.diskStorage || null,
-    assigned_to: asset.assignedTo || null,
-    exact_location: asset.exactLocation || null,
-    operating_system: asset.operatingSystem || null,
-    microsoft_office: asset.microsoftOffice || null,
-
-    condition: asset.condition || 'Good',
-    operational_status: asset.operationalStatus || 'Operational',
-
-    acquisition_cost: parseNumericCost(asset.acquisitionCost),
-    date_acquired: parseDateValue(asset.dateAcquired),
-    date_audited: parseDateValue(asset.dateAudited),
-
-    audited_by: asset.auditedBy || null,
-    remarks: asset.remarks || null,
-  };
-};
+export const mapAssetToDB = (asset: any) => ({
+  department_id: sanitizeDepartmentId(asset.officeId),
+  equipment_type: asset.equipmentType,
+  asset_code: asset.assetCode || `ICT-AST-${Math.random().toString(36).substring(2, 8)}`,
+  property_number: asset.propertyNumber || null,
+  inventory_number: asset.inventoryNumber || null,
+  brand: asset.brand || null,
+  model: asset.model || null,
+  serial_number: asset.serialNumber || null,
+  hostname: asset.hostname || null,
+  processor: asset.processor || null,
+  memory: asset.memory || null,
+  disk_storage: asset.diskStorage || null,
+  assigned_to: asset.assignedTo || null,
+  exact_location: asset.exactLocation || null,
+  operating_system: asset.operatingSystem || null,
+  microsoft_office: asset.microsoftOffice || null,
+  condition: asset.condition || 'Good',
+  operational_status: asset.operationalStatus || 'Operational',
+  acquisition_cost: parseNumericCost(asset.acquisitionCost),
+  date_acquired: parseDateValue(asset.dateAcquired),
+  date_audited: parseDateValue(asset.dateAudited),
+  audited_by: asset.auditedBy || null,
+  remarks: asset.remarks || null,
+});
 
 export const mapTicketFromDB = (dbTicket: any) => {
   let description = dbTicket.description || '';
