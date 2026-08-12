@@ -41,18 +41,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(currentUser);
 
     if (currentUser) {
-      if (currentUser.app_metadata?.provider === 'google') {
-        if (!currentUser.email?.endsWith('@malungon.gov.ph')) {
-          toast.error('Only @malungon.gov.ph accounts are allowed.');
-          await supabase.auth.signOut();
-          setUser(null);
-          setSession(null);
-          setProfile(null);
-          setLoading(false);
-          return;
-        }
-      }
-      
       await fetchProfile(currentUser);
     } else {
       setProfile(null);
@@ -87,6 +75,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (error) {
         if (error.code === 'PGRST116') {
+           // Enforce domain restriction for auto-creation
+           if (currentUser.app_metadata?.provider === 'google') {
+             if (!currentUser.email?.endsWith('@malungon.gov.ph')) {
+               toast.error('Only @malungon.gov.ph accounts are allowed.');
+               await supabase.auth.signOut();
+               setUser(null);
+               setSession(null);
+               setProfile(null);
+               setLoading(false);
+               return;
+             }
+           }
+
            // Create fallback profile
            const { data: newProfile, error: insertError } = await supabase
              .from('profiles')
