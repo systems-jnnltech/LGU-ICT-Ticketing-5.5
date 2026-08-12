@@ -33,10 +33,10 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const { profile, signOut } = useAuth();
-  const [tickets, setTickets] = useState<Ticket[]>(mockTickets);
-  const [assets, setAssets] = useState<Asset[]>(mockAssets);
-  const [offices, setOffices] = useState<Office[]>(mockOffices);
-  const [users, setUsers] = useState<User[]>(mockUsers);
+  const [tickets, setTickets] = useState<Ticket[]>(isSupabaseConfigured ? [] : mockTickets);
+  const [assets, setAssets] = useState<Asset[]>(isSupabaseConfigured ? [] : mockAssets);
+  const [offices, setOffices] = useState<Office[]>(isSupabaseConfigured ? [] : mockOffices);
+  const [users, setUsers] = useState<User[]>(isSupabaseConfigured ? [] : mockUsers);
   const [authError, setAuthError] = useState<string | null>(null);
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     const saved = localStorage.getItem('theme');
@@ -288,7 +288,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   const createNewAsset = async (asset: any) => {
-    if (!isSupabaseConfigured) return;
+    if (!isSupabaseConfigured) {
+      const newAsset = { ...asset, id: asset.id || 'ast_' + Math.random().toString(36).substring(2, 9) };
+      setAssets(prev => [newAsset, ...prev]);
+      toast.success('Asset created locally.');
+      return;
+    }
     try {
       const { error } = await supabase.from('assets').insert(mapAssetToDB(asset));
       if (error) throw error;
@@ -299,7 +304,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
   
   const updateExistingAsset = async (id: string, updates: any) => {
-    if (!isSupabaseConfigured) return;
+    if (!isSupabaseConfigured) {
+      setAssets(prev => prev.map(a => a.id === id ? { ...a, ...updates } : a));
+      toast.success('Asset updated locally.');
+      return;
+    }
     try {
       const oldAsset = assets.find(a => a.id === id);
       const { error } = await supabase.from('assets').update(mapAssetToDB(updates)).eq('id', id);
@@ -333,12 +342,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const updateUserRole = async (userId: string, role: string, departmentId: string | null) => {
     try {
       const sanitizedDeptId = sanitizeDepartmentId(departmentId);
-      const { error } = await supabase
-        .from('profiles')
-        .update({ role, department_id: sanitizedDeptId })
-        .eq('id', userId);
-        
-      if (error) throw error;
+      if (isSupabaseConfigured) {
+        const { error } = await supabase
+          .from('profiles')
+          .update({ role, department_id: sanitizedDeptId })
+          .eq('id', userId);
+          
+        if (error) throw error;
+      }
       
       // Update local state
       setUsers(users.map(u => {
@@ -360,7 +371,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   const createNewOffice = async (name: string) => {
-    if (!isSupabaseConfigured) return;
+    if (!isSupabaseConfigured) {
+      const newOffice = { id: 'off_' + Math.random().toString(36).substring(2, 9), name };
+      setOffices(prev => [...prev, newOffice]);
+      toast.success('Department created locally.');
+      return;
+    }
     try {
       const { error } = await supabase.from('departments').insert({ name });
       if (error) throw error;
@@ -371,7 +387,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
   
   const updateExistingOffice = async (id: string, name: string) => {
-    if (!isSupabaseConfigured) return;
+    if (!isSupabaseConfigured) {
+      setOffices(prev => prev.map(o => o.id === id ? { ...o, name } : o));
+      toast.success('Department updated locally.');
+      return;
+    }
     try {
       const { error } = await supabase.from('departments').update({ name }).eq('id', id);
       if (error) throw error;
