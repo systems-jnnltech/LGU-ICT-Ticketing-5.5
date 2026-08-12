@@ -457,6 +457,8 @@ export function AssetDetail({
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded tracking-widest uppercase border ${
                           ticket.status === 'CLOSED' ? 'bg-surface border-border text-ink-muted' :
                           ticket.status === 'RESOLVED' ? 'bg-green-500/10 border-green-500/20 text-green-500' :
+                          ticket.status === 'ESCALATED' ? 'bg-red-500/10 border-red-500/20 text-red-500' :
+                          ticket.status === 'IN PROGRESS' ? 'bg-orange-500/10 border-orange-500/20 text-orange-500' :
                           'bg-blue-500/10 border-blue-500/20 text-blue-500'
                       }`}>
                         {ticket.status}
@@ -488,6 +490,33 @@ export function AssetDetail({
                            </div>
                          </div>
                        )}
+
+                       {/* Escalated */}
+                       {(() => {
+                         const escalatedLog = ticket.comments?.find(c => c.text === 'System: Status changed to ESCALATED' || c.text.includes('Escalated'));
+                         if (escalatedLog) {
+                           return (
+                             <div className="relative">
+                               <div className="absolute -left-[24px] top-1.5 w-2 h-2 rounded-full bg-red-500 ring-4 ring-bg"></div>
+                               <div className="flex flex-wrap items-center gap-2">
+                                 <span className="text-xs font-bold text-red-500 uppercase tracking-widest">Ticket Escalated</span>
+                                 <span className="text-[10px] font-medium text-ink-muted uppercase tracking-widest border-l border-border pl-2">{format(new Date(escalatedLog.createdAt), "MMM d, yyyy • h:mm a")}</span>
+                               </div>
+                             </div>
+                           );
+                         } else if (ticket.status === 'ESCALATED') {
+                           return (
+                             <div className="relative">
+                               <div className="absolute -left-[24px] top-1.5 w-2 h-2 rounded-full bg-red-500 ring-4 ring-bg"></div>
+                               <div className="flex flex-wrap items-center gap-2">
+                                 <span className="text-xs font-bold text-red-500 uppercase tracking-widest">Ticket Escalated</span>
+                                 <span className="text-[10px] font-medium text-ink-muted uppercase tracking-widest border-l border-border pl-2">{format(new Date(ticket.updatedAt), "MMM d, yyyy • h:mm a")}</span>
+                               </div>
+                             </div>
+                           );
+                         }
+                         return null;
+                       })()}
 
                        {/* Resolved / Closed */}
                        {['RESOLVED', 'CLOSED'].includes(ticket.status) && (
