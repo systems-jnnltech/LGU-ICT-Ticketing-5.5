@@ -409,38 +409,17 @@ export function AssetDetail({
               Service & Audit History
             </h3>
             <span className="text-[10px] text-ink-muted bg-surface border border-border px-3 py-1 rounded-md font-mono font-bold tracking-widest">
-              RECORDS: {(asset.history?.length || 0) + relatedTickets.length}
+              RECORDS: {relatedTickets.length}
             </span>
           </div>
           
           <div className="divide-y divide-border">
-            {(!asset.history || asset.history.length === 0) &&
-            relatedTickets.length === 0 ? (
+            {relatedTickets.length === 0 ? (
               <div className="p-10 text-center text-ink-muted text-sm font-medium">
-                No history or service tickets recorded.
+                No service tickets recorded.
               </div>
             ) : (
               <>
-                {/* Edits from Asset History */}
-                {asset.history?.map((record) => (
-                  <div
-                    key={record.id}
-                    className="p-6 md:p-8 hover:bg-bg/50 transition-colors"
-                  >
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-3 gap-2">
-                      <div className="font-bold text-sm text-ink">
-                        {record.action}
-                      </div>
-                      <span className="text-[11px] font-bold text-ink-muted uppercase tracking-widest">
-                        {format(new Date(record.createdAt), "MMM d, yyyy • h:mm a")}
-                      </span>
-                    </div>
-                    <p className="text-sm font-medium text-ink-muted leading-relaxed whitespace-pre-wrap max-w-4xl">
-                      {record.changes}
-                    </p>
-                  </div>
-                ))}
-
                 {/* Related Tickets as Repair History */}
                 {relatedTickets.map((ticket) => (
                   <div
