@@ -93,7 +93,7 @@ export function Dashboard({ onViewTicket }: { onViewTicket?: (id: string) => voi
                 </h2>
               </div>
               
-              <div className="grid grid-cols-3 divide-x divide-red-500/20 border-b border-red-500/20 bg-red-500/5 p-4 text-center">
+              <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-red-500/20 border-b border-red-500/20 bg-red-500/5 p-4 text-center">
                 <div>
                   <p className="text-xs font-medium text-ink-muted mb-1">Total Escalated</p>
                   <p className="text-xl font-bold text-ink">{totalEscalated}</p>
@@ -108,7 +108,8 @@ export function Dashboard({ onViewTicket }: { onViewTicket?: (id: string) => voi
                 </div>
               </div>
 
-              <table className="w-full text-left">
+              <div className="overflow-x-auto">
+              <table className="w-full text-left min-w-[600px]">
                 <thead className="bg-red-500/10 border-b border-red-500/20">
                   <tr className="text-[10px] text-red-500 uppercase font-bold font-mono">
                     <th className="px-4 py-3">Ticket</th>
@@ -137,6 +138,7 @@ export function Dashboard({ onViewTicket }: { onViewTicket?: (id: string) => voi
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
           )}
 
@@ -147,7 +149,8 @@ export function Dashboard({ onViewTicket }: { onViewTicket?: (id: string) => voi
                 New Tickets Pending Assignment
               </h2>
             </div>
-            <table className="w-full text-left">
+            <div className="overflow-x-auto">
+            <table className="w-full text-left min-w-[700px]">
               <thead className="bg-surface/5 border-b border-border">
                 <tr className="text-[10px] text-ink-muted uppercase font-bold font-mono">
                   <th className="px-4 py-3">Ticket ID</th>
@@ -178,6 +181,8 @@ export function Dashboard({ onViewTicket }: { onViewTicket?: (id: string) => voi
                 )}
               </tbody>
             </table>
+              </div>
+            </div>
           </div>
 
           {currentUser?.role !== 'Department User' && (
@@ -285,6 +290,5 @@ export function Dashboard({ onViewTicket }: { onViewTicket?: (id: string) => voi
           </div>
         </div>
       </div>
-    </div>
   );
 }
