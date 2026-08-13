@@ -36,18 +36,9 @@ export function TicketDetail({ ticketId, onBack }: { ticketId: string, onBack: (
     // Change ticket status to REFERRED
     changeTicketStatus(ticket.id, 'REFERRED', ticket.assignedToId);
     
-    // Log explicit comment with referral details for parsing in DispatchFormModal
-    const commentText = `Referred to External Technician
-Reason: ${referralData.reason}
-Service Provider: ${referralData.serviceProvider}
-Contact Person: ${referralData.contactPerson}
-Contact No.: ${referralData.contactNo}
-Date Referred: ${referralData.dateReferred}
-Reference / Job Order No.: ${referralData.referenceNumber}
-Expected Return: ${referralData.expectedReturn}
-Notes: ${referralData.notes}`;
+    // Log system action
+    addComment(ticket.id, `Action: Assessed and referred to external technician (${referralData.serviceProvider || 'External Service'})`);
     
-    addComment(ticket.id, commentText);
     setShowReferralModal(false);
     Toast.fire({ icon: 'success', title: 'Ticket Referred to External Technician' });
   };
@@ -67,9 +58,9 @@ Notes: ${referralData.notes}`;
   const ictStaff = users.filter(u => u.role === 'ICT Support');
 
   const isAdminOrICT = currentUser?.role === 'Admin' || currentUser?.role === 'ICT Support';
-  const hasReferralDetails = ticket.status === 'REFERRED' || (ticket.comments || []).some(c => c.text.startsWith('Referred to External Technician'));
+  const hasReferralDetails = ticket.status === 'REFERRED' || (ticket.comments || []).some(c => c.text.includes('referred to external technician') || c.text.includes('DISPATCH_INFO'));
 
-  // Exclude system logs and hidden metadata from regular discussion
+  // Filter helper to exclude system status changes and hidden dispatch JSON metadata
   const isPublicDiscussionComment = (c: { text: string }) => 
     !c.text.startsWith('System: Status changed to') && !c.text.includes('DISPATCH_INFO');
 
@@ -869,6 +860,10 @@ Notes: ${referralData.notes}`;
           asset={asset}
           department={department}
           onClose={() => setShowDispatchModal(false)}
+          onSave={(commentText: string) => {
+            addComment(ticket.id, commentText);
+            Toast.fire({ icon: 'success', title: 'Technician details saved' });
+          }}
         />
       )}
     </div>
