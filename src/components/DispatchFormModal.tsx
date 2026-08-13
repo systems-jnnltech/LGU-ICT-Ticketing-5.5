@@ -281,8 +281,8 @@ export function DispatchFormModal({ ticket, asset, department, onClose, onSave }
             </div>
             <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 ${!editDispatch ? 'opacity-60 pointer-events-none' : ''}`}>
               <div>
-                <label className="text-[10px] font-bold uppercase tracking-widest text-ink-muted block mb-1">Date Released</label>
-                <input type="date" value={dispatchData.dateReleased} onChange={(e) => setDispatchData({...dispatchData, dateReleased: e.target.value})} className="w-full px-4 py-2 bg-bg border border-border rounded-xl text-sm outline-none focus:ring-2 focus:ring-accent/50" />
+                <label className="text-[10px] font-bold uppercase tracking-widest text-ink-muted block mb-1">Date & Time Released</label>
+                <input type="datetime-local" value={dispatchData.dateReleased} onChange={(e) => setDispatchData({...dispatchData, dateReleased: e.target.value})} className="w-full px-4 py-2 bg-bg border border-border rounded-xl text-sm outline-none focus:ring-2 focus:ring-accent/50" />
               </div>
               <div>
                 <label className="text-[10px] font-bold uppercase tracking-widest text-ink-muted block mb-1">Released By (ICT)</label>
@@ -315,8 +315,8 @@ export function DispatchFormModal({ ticket, asset, department, onClose, onSave }
             </div>
             <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 ${!editRepair ? 'opacity-60 pointer-events-none' : ''}`}>
               <div>
-                <label className="text-[10px] font-bold uppercase tracking-widest text-ink-muted block mb-1">Date Returned</label>
-                <input type="date" value={repairData.dateReturned} onChange={(e) => setRepairData({...repairData, dateReturned: e.target.value})} className="w-full px-4 py-2 bg-bg border border-border rounded-xl text-sm outline-none focus:ring-2 focus:ring-accent/50" />
+                <label className="text-[10px] font-bold uppercase tracking-widest text-ink-muted block mb-1">Date & Time Returned</label>
+                <input type="datetime-local" value={repairData.dateReturned} onChange={(e) => setRepairData({...repairData, dateReturned: e.target.value})} className="w-full px-4 py-2 bg-bg border border-border rounded-xl text-sm outline-none focus:ring-2 focus:ring-accent/50" />
               </div>
               <div>
                 <label className="text-[10px] font-bold uppercase tracking-widest text-ink-muted block mb-1">Repair Status</label>
