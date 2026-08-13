@@ -37,7 +37,17 @@ export function TicketDetail({ ticketId, onBack }: { ticketId: string, onBack: (
     changeTicketStatus(ticket.id, 'REFERRED', ticket.assignedToId);
     
     // Log system action
-    addComment(ticket.id, `Action: Assessed and referred to external technician (${referralData.serviceProvider || 'External Service'})`);
+    const commentText = `Referred to External Technician
+Reason: ${referralData.reason}
+Service Provider: ${referralData.serviceProvider}
+Contact Person: ${referralData.contactPerson}
+Contact No.: ${referralData.contactNo}
+Date Referred: ${referralData.dateReferred}
+Reference Number: ${referralData.referenceNumber}
+Expected Return: ${referralData.expectedReturn}
+Notes: ${referralData.notes}`;
+    
+    addComment(ticket.id, commentText);
     
     setShowReferralModal(false);
     Toast.fire({ icon: 'success', title: 'Ticket Referred to External Technician' });
