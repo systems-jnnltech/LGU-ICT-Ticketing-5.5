@@ -185,7 +185,7 @@ export function Dashboard({ onViewTicket }: { onViewTicket?: (id: string) => voi
                         </button>
                       </td>
                       <td className="px-6 py-5 text-ink text-xs font-medium">{ticketOffice?.name || 'N/A'}</td>
-                      <td className="px-6 py-5 text-ink text-xs font-medium">{ticketAsset?.name || 'No Asset'}</td>
+                      <td className="px-6 py-5 text-ink text-xs font-medium">{ticketAsset ? `${ticketAsset.brand} ${ticketAsset.model}` : 'No Asset'}</td>
                       <td className="px-6 py-5 text-ink font-medium truncate max-w-[200px]">{ticket.subject}</td>
                       <td className="px-6 py-5 text-ink text-xs font-medium whitespace-nowrap">{format(new Date(ticket.createdAt), 'MMM d, yyyy')}</td>
                       <td className="px-6 py-5">
