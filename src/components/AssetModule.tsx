@@ -522,11 +522,11 @@ export function AssetDetail({
 
                         {/* Chronological Action Events */}
                         {allEvents.map((ev, i) => (
-                          <div key={i} className="relative text-xs">
+                          <React.Fragment key={i}>
                             
                             {/* ICT Action */}
                             {ev.type === 'ict_action' && (
-                              <>
+                              <div className="relative text-xs">
                                 <div className="absolute -left-[25px] top-1 w-2.5 h-2.5 rounded-full bg-orange-500 ring-4 ring-bg"></div>
                                 <div className="flex flex-wrap items-baseline gap-2">
                                   <span className="font-bold text-ink">ICT Action (Attempt #{ev.attemptNumber})</span>
@@ -534,12 +534,12 @@ export function AssetDetail({
                                   {ev.dateStr && <span className="text-[10px] text-ink-muted font-mono ml-auto">{ev.dateStr}</span>}
                                 </div>
                                 <p className="text-xs text-ink font-medium mt-1 leading-relaxed">{ev.text as string}</p>
-                              </>
+                              </div>
                             )}
 
                             {/* Problem Still Exists */}
                             {ev.type === 'problem_report' && (
-                              <>
+                              <div className="relative text-xs">
                                 <div className="absolute -left-[25px] top-1 w-2.5 h-2.5 rounded-full bg-red-500 ring-4 ring-bg"></div>
                                 <div className="flex flex-wrap items-baseline gap-2">
                                   <span className="font-bold text-red-500">Problem Still Exists</span>
@@ -550,12 +550,12 @@ export function AssetDetail({
                                   <p className="text-ink"><span className="font-bold text-red-500">Reason:</span> {ev.reason as string}</p>
                                   {ev.details && <p className="text-ink-muted"><span className="font-bold text-ink">Details:</span> {ev.details as string}</p>}
                                 </div>
-                              </>
+                              </div>
                             )}
 
                             {/* Escalation Event */}
                             {(ev.type === 'manual_escalation' || (ev.type === 'problem_report' && ev.isEscalation)) && (
-                              <div className="mt-2">
+                              <div className="relative text-xs mt-2">
                                 <div className="absolute -left-[25px] top-1 w-2.5 h-2.5 rounded-full bg-red-500 ring-4 ring-bg animate-pulse"></div>
                                 <div className="flex items-center justify-between">
                                   <span className="font-bold text-[11px] text-red-500 uppercase tracking-widest">
@@ -568,7 +568,7 @@ export function AssetDetail({
 
                             {/* External Referral Event */}
                             {ev.type === 'referral' && (
-                              <>
+                              <div className="relative text-xs">
                                 <div className="absolute -left-[25px] top-1 w-2.5 h-2.5 rounded-full bg-purple-500 ring-4 ring-bg"></div>
                                 <div className="flex flex-wrap items-baseline gap-2">
                                   <span className="font-bold text-purple-500">Referred to External Technician</span>
@@ -578,10 +578,10 @@ export function AssetDetail({
                                   <p className="text-ink"><span className="font-bold text-purple-500">Provider:</span> {ev.provider as string}</p>
                                   <p className="text-ink-muted"><span className="font-bold text-ink">Reason:</span> {ev.reason as string}</p>
                                 </div>
-                              </>
+                              </div>
                             )}
 
-                          </div>
+                          </React.Fragment>
                         ))}
 
                         {/* Resolved/Closed Terminal Node */}
@@ -601,7 +601,7 @@ export function AssetDetail({
                     </div>
                   );
                 })}
-              </>
+              </div>
             )}
           </div>
         </div>
