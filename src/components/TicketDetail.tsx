@@ -1,50 +1,39 @@
 import React, { useState } from 'react';
 import { useAppContext } from '../store/AppContext';
-import { ArrowLeft, Clock, User, Monitor, AlertCircle, CheckCircle2, Send, Activity } from 'lucide-react';
+import { ArrowLeft, Clock, User, Monitor, AlertCircle, CheckCircle2, Send, Activity, X, ExternalLink } from 'lucide-react';
 import { format } from 'date-fns';
 import { getTicketSLA } from '../utils/sla';
 import { Toast, ConfirmModal } from '../lib/toast';
 import Swal from 'sweetalert2';
+import { DispatchFormModal } from './DispatchFormModal';
 
 export function TicketDetail({ ticketId, onBack }: { ticketId: string, onBack: () => void }) {
-  const { tickets, users, assets, categories, currentUser, changeTicketStatus, updateTicketPriority, addComment, updateRecommendation } = useAppContext();
+  const { tickets, users, assets, offices, categories, currentUser, changeTicketStatus, updateTicketPriority, addComment, updateRecommendation } = useAppContext();
   const ticket = tickets.find(t => t.id === ticketId);
+  const department = offices.find(o => o.id === ticket?.officeId);
   
   const [selectedAssignee, setSelectedAssignee] = useState(ticket?.assignedToId || '');
   const [newCommentText, setNewCommentText] = useState('');
   const [recommendationText, setRecommendationText] = useState('');
   const [isEditingRecommendation, setIsEditingRecommendation] = useState(false);
+  const [showDispatchModal, setShowDispatchModal] = useState(false);
   const [showReferralModal, setShowReferralModal] = useState(false);
   const [referralData, setReferralData] = useState({
     reason: 'Hardware repair requires specialized technician',
-    serviceProvider: '',
-    contactPerson: '',
-    contactNo: '',
-    dateReferred: '',
-    referenceNumber: '',
-    expectedReturn: '',
-    notes: ''
   });
 
   const handleReferralSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!ticket) return;
+    
+    // Change ticket status to REFERRED
     changeTicketStatus(ticket.id, 'REFERRED', ticket.assignedToId);
     
-    // Log the action explicitly
-    addComment(ticket.id, `Action: Assessed and referred to external technician`);
-    
-    const commentText = `Referred to External Technician
-Reason: ${referralData.reason}
-Service Provider: ${referralData.serviceProvider}
-Contact Person: ${referralData.contactPerson}
-Contact No.: ${referralData.contactNo}
-Date Referred: ${referralData.dateReferred}
-Reference / Job Order No.: ${referralData.referenceNumber}
-Expected Return: ${referralData.expectedReturn}
-Notes: ${referralData.notes}`;
+    // Log system action
+    const commentText = `Referred to External Technician\nReason: ${referralData.reason}`;
     
     addComment(ticket.id, commentText);
+    
     setShowReferralModal(false);
     Toast.fire({ icon: 'success', title: 'Ticket Referred to External Technician' });
   };
@@ -54,7 +43,6 @@ Notes: ${referralData.notes}`;
       setSelectedAssignee(ticket.assignedToId);
     }
   }, [ticket?.assignedToId]);
-  
 
   if (!ticket) return null;
 
@@ -63,6 +51,13 @@ Notes: ${referralData.notes}`;
   const asset = assets.find(a => a.id === ticket.assetId);
   const category = categories.find(c => c.id === ticket.categoryId);
   const ictStaff = users.filter(u => u.role === 'ICT Support');
+
+  const isAdminOrICT = currentUser?.role === 'Admin' || currentUser?.role === 'ICT Support';
+  const hasReferralDetails = ticket.status === 'REFERRED' || (ticket.comments || []).some(c => c.text.includes('referred to external technician') || c.text.includes('DISPATCH_INFO'));
+
+  // Filter helper to exclude system status changes and hidden dispatch JSON metadata
+  const isPublicDiscussionComment = (c: { text: string }) => 
+    !c.text.startsWith('System: Status changed to') && !c.text.includes('DISPATCH_INFO');
 
   const handleAssign = async () => {
     if (selectedAssignee) {
@@ -85,7 +80,7 @@ Notes: ${referralData.notes}`;
     if (result.isConfirmed) {
       changeTicketStatus(ticket.id, newStatus, ticket.assignedToId);
       if (actionDesc) {
-          addComment(ticket.id, `Action: ${actionDesc}`);
+        addComment(ticket.id, `Action: ${actionDesc}`);
       }
       Toast.fire({ icon: 'success', title: `Status updated to ${newStatus}` });
     }
@@ -118,13 +113,27 @@ Notes: ${referralData.notes}`;
     Toast.fire({ icon: 'success', title: 'Recommendation added' });
   };
 
-  const inProgressCountHistory = ticket.statusHistory?.filter(h => h.status === 'IN PROGRESS').length || 0;
-  const inProgressCountComments = ticket.comments?.filter(c => c.text === 'System: Status changed to IN PROGRESS').length || 0;
-  const inProgressCount = Math.max(inProgressCountHistory, inProgressCountComments, 1);
+  const inProgressCount = ticket.comments?.filter(c => c.text === 'System: Status changed to IN PROGRESS').length || 0;
+  const escalatedCount = ticket.comments?.filter(c => c.text === 'System: Status changed to ESCALATED').length || 0;
+  const referredCount = ticket.comments?.filter(c => c.text === 'System: Status changed to REFERRED').length || 0;
+  
   const occurrences = (ticket.ictRecommendation || '').match(/Taken \d+:/g)?.length || 0;
-  const maxIctRecommendations = inProgressCount;
-  const canAddRecommendationIct = currentUser?.role === 'ICT Support' && ticket.assignedToId === currentUser.id && ticket.status === 'IN PROGRESS' && occurrences < maxIctRecommendations;
-  const canAddRecommendationAdmin = currentUser?.role === 'Admin' && ['ESCALATED', 'REFERRED'].includes(ticket.status) && occurrences < 3;
+  
+  const hasBeenEscalated = ticket.status === 'ESCALATED' || 
+      (ticket.statusHistory || []).some(h => h.status === 'ESCALATED') ||
+      (ticket.comments || []).some(c => c.text.includes('Escalated'));
+  
+  const totalActionableTransitions = inProgressCount + escalatedCount + referredCount;
+  const isActionable = ['IN PROGRESS', 'ESCALATED', 'REFERRED'].includes(ticket.status);
+  
+  const allowedRecommendations = Math.max(totalActionableTransitions, isActionable ? 1 : 0);
+  
+  const isAdmin = currentUser?.role === 'Admin';
+  const isICTSupport = currentUser?.role === 'ICT Support';
+  
+  const hasUnusedCycle = occurrences < allowedRecommendations;
+  const isAuthorized = (isICTSupport && ticket.assignedToId === currentUser.id) || isAdmin;
+  const canAddRecommendation = isAuthorized && hasUnusedCycle && isActionable;
 
   return (
     <div className="space-y-8 max-w-[1600px] mx-auto pb-16">
@@ -203,7 +212,7 @@ Notes: ${referralData.notes}`;
                         <CheckCircle2 className="w-4 h-4" />
                         ICT Action / Recommendation
                       </h3>
-                      {(canAddRecommendationIct || canAddRecommendationAdmin) && !isEditingRecommendation && (
+                      {canAddRecommendation && !isEditingRecommendation && (
                           <button 
                               onClick={() => {
                                   setRecommendationText('');
@@ -253,19 +262,32 @@ Notes: ${referralData.notes}`;
           
           {/* Discussion / Comments */}
           <div className="bg-surface rounded-2xl shadow-sm border border-border overflow-hidden flex flex-col">
-              <div className="px-6 py-5 border-b border-border bg-bg/50 flex justify-between items-center">
+              <div className="px-6 py-5 border-b border-border bg-bg/50 flex justify-between items-center flex-wrap gap-3">
                   <h3 className="text-[11px] font-bold text-ink uppercase tracking-widest">Discussion & Activity</h3>
-                  <span className="text-[10px] font-bold uppercase tracking-widest bg-bg border border-border text-ink-muted px-3 py-1 rounded-md shadow-sm">
-                    {ticket.comments?.filter(c => !c.text.startsWith('System: Status changed to')).length || 0} Events
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {/* View Technician Details Button - Only visible for Admin and ICT Support roles */}
+                    {isAdminOrICT && hasReferralDetails && (
+                      <button
+                        onClick={() => setShowDispatchModal(true)}
+                        className="text-[10px] font-bold uppercase tracking-widest bg-purple-500/10 text-purple-600 border border-purple-500/20 hover:bg-purple-500/20 px-3 py-1 rounded-md shadow-sm flex items-center gap-1.5 transition-colors"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        View Technician Details
+                      </button>
+                    )}
+                    <span className="text-[10px] font-bold uppercase tracking-widest bg-bg border border-border text-ink-muted px-3 py-1 rounded-md shadow-sm">
+                      {ticket.comments?.filter(isPublicDiscussionComment).length || 0} Events
+                    </span>
+                  </div>
               </div>
               <div className="p-8 space-y-8 flex-1">
-                  {ticket.comments && ticket.comments.filter(c => !c.text.startsWith('System: Status changed to')).length > 0 ? (
-                      ticket.comments.filter(c => !c.text.startsWith('System: Status changed to')).map(comment => {
+                  {ticket.comments && ticket.comments.filter(isPublicDiscussionComment).length > 0 ? (
+                      ticket.comments.filter(isPublicDiscussionComment).map(comment => {
                           const commentUser = users.find(u => u.id === comment.userId);
                           const isOwn = comment.userId === currentUser?.id;
                           const isAction = comment.text.startsWith('Action:');
-                          const displayText = isAction ? comment.text.replace('Action: ', '') : comment.text;
+                          const rawText = isAction ? comment.text.replace('Action: ', '') : comment.text;
+                          const displayText = rawText.replace(/<!--[\s\S]*?-->/g, '').trim();
                           
                           if (isAction) {
                               return (
@@ -276,7 +298,7 @@ Notes: ${referralData.notes}`;
                                           </div>
                                           <div className="text-left flex-1 flex flex-wrap items-center gap-1.5">
                                               <span className="text-[11px] font-bold text-ink uppercase tracking-widest">{commentUser?.name}</span>
-                                              <span className="text-[12px] font-medium text-ink-muted">{displayText}</span>
+                                              <span className="text-[12px] font-medium text-ink-muted whitespace-pre-wrap text-left">{displayText}</span>
                                           </div>
                                           <div className="text-[9px] font-bold text-ink-muted uppercase tracking-widest shrink-0">
                                               {format(new Date(comment.createdAt), 'MMM d, h:mm a')}
@@ -299,12 +321,12 @@ Notes: ${referralData.notes}`;
                                           <span className="text-xs font-bold text-ink">{commentUser?.name}</span>
                                           <span className="text-[10px] text-ink-muted uppercase tracking-widest font-bold">{format(new Date(comment.createdAt), 'MMM d, h:mm a')}</span>
                                       </div>
-                                      <div className={`px-5 py-3.5 rounded-2xl text-sm font-medium shadow-sm inline-block ${
+                                      <div className={`px-5 py-3.5 rounded-2xl text-sm font-medium shadow-sm inline-block whitespace-pre-wrap text-left ${
                                           isOwn 
                                               ? 'bg-accent text-white rounded-tr-none' 
                                               : 'bg-bg border border-border text-ink rounded-tl-none'
                                       }`}>
-                                          {comment.text}
+                                          {displayText}
                                       </div>
                                   </div>
                               </div>
@@ -322,7 +344,7 @@ Notes: ${referralData.notes}`;
                               type="text"
                               value={newCommentText}
                               onChange={(e) => setNewCommentText(e.target.value)}
-                              placeholder="Type a message..."
+                              placeholder="Type a message or update..."
                               className="flex-1 bg-surface border border-border rounded-xl pl-5 pr-14 py-3.5 text-sm font-medium outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent shadow-sm"
                           />
                           <button 
@@ -458,7 +480,7 @@ Notes: ${referralData.notes}`;
                                   </button>
                                 </div>
                             </div>
-                            {['ESCALATED', 'REFERRED'].includes(ticket.status) && (
+                            {['ESCALATED', 'REFERRED', 'RESOLVED'].includes(ticket.status) && (
                                 <div className="pt-4 border-t border-border space-y-3">
                                     {ticket.status === 'ESCALATED' && (
                                         <button 
@@ -468,12 +490,48 @@ Notes: ${referralData.notes}`;
                                             Assess & Refer Externally
                                         </button>
                                     )}
-                                    <button 
-                                        onClick={() => handleStatusUpdate('RESOLVED', 'Marked ticket as Repaired / Resolved')}
-                                        className="w-full px-5 py-3.5 bg-green-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:opacity-90 shadow-sm transition-all flex items-center justify-center gap-2 active:scale-95"
-                                    >
-                                        <CheckCircle2 className="w-4 h-4" /> Mark Resolved
-                                    </button>
+                                    {ticket.status === 'REFERRED' && (
+                                        <button onClick={() => setShowDispatchModal(true)} className="w-full px-5 py-3.5 bg-purple-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:opacity-90 shadow-sm transition-all active:scale-95 mb-3">
+                                            External Technician Details
+                                        </button>
+                                    )}
+                                    {['ESCALATED', 'REFERRED'].includes(ticket.status) && (
+                                        <button 
+                                            onClick={async () => {
+                                                if (ticket.status === 'REFERRED') {
+                                                    const confirmResult = await Swal.fire({
+                                                        title: 'Mark Ticket Resolved & Close?',
+                                                        text: 'The external repair has been completed. This will permanently close the ticket. The Department will not need to confirm this resolution.',
+                                                        icon: 'warning',
+                                                        showCancelButton: true,
+                                                        confirmButtonText: 'Mark Resolved & Close',
+                                                        cancelButtonText: 'Cancel',
+                                                        confirmButtonColor: '#22c55e',
+                                                        cancelButtonColor: '#64748b',
+                                                        customClass: { popup: 'rounded-2xl', title: 'font-bold' }
+                                                    });
+                                                    if (confirmResult.isConfirmed) {
+                                                        changeTicketStatus(ticket.id, 'CLOSED', ticket.assignedToId);
+                                                        addComment(ticket.id, 'Action: External repair completed, ticket permanently closed');
+                                                        Toast.fire({ icon: 'success', title: 'Ticket Closed' });
+                                                    }
+                                                } else {
+                                                    handleStatusUpdate('RESOLVED', 'Marked ticket as Repaired / Resolved');
+                                                }
+                                            }}
+                                            className="w-full px-5 py-3.5 bg-green-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:opacity-90 shadow-sm transition-all flex items-center justify-center gap-2 active:scale-95"
+                                        >
+                                            <CheckCircle2 className="w-4 h-4" /> {ticket.status === 'REFERRED' ? 'Mark Resolved & Close' : 'Mark Resolved'}
+                                        </button>
+                                    )}
+                                    {ticket.status === 'RESOLVED' && hasBeenEscalated && (
+                                        <button 
+                                            onClick={() => handleStatusUpdate('CLOSED', 'Closed ticket (Escalation Resolution)')}
+                                            className="w-full px-5 py-3.5 bg-green-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:opacity-90 shadow-sm transition-all flex items-center justify-center gap-2 active:scale-95"
+                                        >
+                                            <CheckCircle2 className="w-4 h-4" /> Close Ticket
+                                        </button>
+                                    )}
                                 </div>
                             )}
                         </div>
@@ -494,26 +552,35 @@ Notes: ${referralData.notes}`;
                             )}
                             {ticket.status === 'REFERRED' && (
                                 <>
-                                    <button onClick={() => {
-                                        const referralComment = ticket.comments?.find(c => c.text.startsWith('Referred to External Technician'));
-                                        if (referralComment) {
-                                            Swal.fire({
-                                                title: 'External Technician Details',
-                                                html: `<div class="text-left text-sm whitespace-pre-wrap font-sans mt-4 bg-bg p-4 rounded-xl border border-border text-ink">${referralComment.text}</div>`,
-                                                confirmButtonColor: '#f97316',
-                                                confirmButtonText: 'Close',
-                                                customClass: { popup: 'rounded-2xl', title: 'font-bold' }
-                                            });
-                                        } else {
-                                            Toast.fire({ icon: 'info', title: 'No technician details found' });
-                                        }
-                                    }} className="w-full px-5 py-3.5 bg-purple-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:opacity-90 shadow-sm transition-all active:scale-95">
-                                        View Technician Details
+                                    <button onClick={() => setShowDispatchModal(true)} className="w-full px-5 py-3.5 bg-purple-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:opacity-90 shadow-sm transition-all active:scale-95">
+                                        External Technician Details
                                     </button>
-                                    <button onClick={() => handleStatusUpdate('RESOLVED', 'Marked ticket as Repaired / Resolved')} className="w-full px-5 py-3.5 bg-green-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:opacity-90 shadow-sm transition-all flex items-center justify-center gap-2 active:scale-95">
-                                        <CheckCircle2 className="w-4 h-4"/> Mark Resolved
+                                    <button onClick={async () => {
+                                        const confirmResult = await Swal.fire({
+                                            title: 'Mark Ticket Resolved & Close?',
+                                            text: 'The external repair has been completed. This will permanently close the ticket. The Department will not need to confirm this resolution.',
+                                            icon: 'warning',
+                                            showCancelButton: true,
+                                            confirmButtonText: 'Mark Resolved & Close',
+                                            cancelButtonText: 'Cancel',
+                                            confirmButtonColor: '#22c55e',
+                                            cancelButtonColor: '#64748b',
+                                            customClass: { popup: 'rounded-2xl', title: 'font-bold' }
+                                        });
+                                        if (confirmResult.isConfirmed) {
+                                            changeTicketStatus(ticket.id, 'CLOSED', ticket.assignedToId);
+                                            addComment(ticket.id, 'Action: External repair completed, ticket permanently closed');
+                                            Toast.fire({ icon: 'success', title: 'Ticket Closed' });
+                                        }
+                                    }} className="w-full px-5 py-3.5 bg-green-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:opacity-90 shadow-sm transition-all flex items-center justify-center gap-2 active:scale-95">
+                                        <CheckCircle2 className="w-4 h-4"/> Mark Resolved & Close
                                     </button>
                                 </>
+                            )}
+                            {ticket.status === 'RESOLVED' && hasBeenEscalated && (
+                                <button onClick={() => handleStatusUpdate('CLOSED', 'Closed ticket (Escalation Resolution)')} className="w-full px-5 py-3.5 bg-green-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:opacity-90 shadow-sm transition-all flex items-center justify-center gap-2 active:scale-95">
+                                    <CheckCircle2 className="w-4 h-4"/> Close Ticket
+                                </button>
                             )}
                         </div>
                     )}
@@ -523,24 +590,100 @@ Notes: ${referralData.notes}`;
                         <div className="flex flex-col gap-3">
                             {ticket.status === 'RESOLVED' && (
                                 <>
-                                    <button onClick={() => handleStatusUpdate('CLOSED', 'Confirmed resolution and closed the ticket')} className="w-full px-5 py-3.5 bg-green-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:opacity-90 shadow-sm transition-all flex items-center justify-center gap-2 active:scale-95">
+                                    <button 
+                                        disabled={hasBeenEscalated}
+                                        onClick={() => handleStatusUpdate('CLOSED', 'Confirmed resolution and closed the ticket')} 
+                                        className={`w-full px-5 py-3.5 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest shadow-sm transition-all flex items-center justify-center gap-2 ${hasBeenEscalated ? 'bg-slate-400 cursor-not-allowed' : 'bg-green-500 hover:opacity-90 active:scale-95'}`}
+                                    >
                                         <CheckCircle2 className="w-4 h-4"/> Confirm & Close
                                     </button>
-                                    <button onClick={async () => {
-                                        const attempts = (ticket.ictRecommendation || '').match(/Taken \d+:/g)?.length || 0;
-                                        if (attempts >= 2) {
-                                            const result = await ConfirmModal.fire({
-                                                text: 'Problem still exists after 2 attempts. Escalate to ICT Head?'
-                                            });
-                                            if (result.isConfirmed) {
-                                                changeTicketStatus(ticket.id, 'ESCALATED', ticket.assignedToId);
-                                                addComment(ticket.id, 'Action: Escalated ticket (Problem still exists after multiple attempts)');
-                                                Toast.fire({ icon: 'success', title: 'Ticket Escalated' });
+                                    <button 
+                                        disabled={hasBeenEscalated}
+                                        onClick={async () => {
+                                        const result = await Swal.fire({
+                                            title: 'Why does the problem still exist?',
+                                            html: `
+                                                <div class="text-left space-y-4 font-sans mt-2">
+                                                    <div>
+                                                        <label class="block text-[10px] font-bold uppercase tracking-widest text-ink-muted mb-2">Reason (Required)</label>
+                                                        <select id="swal-reason" class="w-full px-4 py-3 bg-bg border border-border rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-accent/50 appearance-none">
+                                                            <option value="">Select a reason...</option>
+                                                            <option value="Problem still occurs">Problem still occurs</option>
+                                                            <option value="Partially resolved">Partially resolved</option>
+                                                            <option value="Different problem occurred">Different problem occurred</option>
+                                                            <option value="Asset still unusable">Asset still unusable</option>
+                                                            <option value="Issue comes back intermittently">Issue comes back intermittently</option>
+                                                            <option value="Other">Other</option>
+                                                        </select>
+                                                    </div>
+                                                    <div>
+                                                        <label class="block text-[10px] font-bold uppercase tracking-widest text-ink-muted mb-2">Additional Details (Optional)</label>
+                                                        <textarea id="swal-details" class="w-full px-4 py-3 bg-bg border border-border rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-accent/50 resize-none" rows="3" placeholder="Provide any additional context..."></textarea>
+                                                    </div>
+                                                </div>
+                                            `,
+                                            showCancelButton: true,
+                                            confirmButtonText: 'Submit Problem Report',
+                                            cancelButtonText: 'Cancel',
+                                            confirmButtonColor: '#ef4444',
+                                            cancelButtonColor: '#64748b',
+                                            customClass: { popup: 'rounded-2xl', title: 'font-bold' },
+                                            preConfirm: () => {
+                                                const reason = (document.getElementById('swal-reason') as HTMLSelectElement).value;
+                                                const details = (document.getElementById('swal-details') as HTMLTextAreaElement).value;
+                                                if (!reason) {
+                                                    Swal.showValidationMessage('Please select a reason');
+                                                    return false;
+                                                }
+                                                return { reason, details };
                                             }
-                                        } else {
-                                            handleStatusUpdate('IN PROGRESS', 'Reopened ticket (Problem still exists)');
+                                        });
+
+                                        if (result.isConfirmed) {
+                                            const { reason, details } = result.value;
+                                            const attempts = (ticket.ictRecommendation || '').match(/Taken \d+:/g)?.length || 0;
+                                            const reportText = `Problem Still Exists Report:\nReason: ${reason}${details ? '\nDetails: ' + details : ''}`;
+
+                                            let confirmResult;
+                                            if (attempts >= 2) {
+                                                confirmResult = await Swal.fire({
+                                                    title: 'Are you sure?',
+                                                    text: 'The problem still exists after 2 resolution attempts. Submitting this report will escalate the ticket to ICT Head for further assessment.',
+                                                    icon: 'warning',
+                                                    showCancelButton: true,
+                                                    confirmButtonText: 'Yes, Escalate to ICT Head',
+                                                    cancelButtonText: 'Cancel',
+                                                    confirmButtonColor: '#ef4444',
+                                                    cancelButtonColor: '#64748b',
+                                                    customClass: { popup: 'rounded-2xl', title: 'font-bold' }
+                                                });
+                                            } else {
+                                                confirmResult = await Swal.fire({
+                                                    title: 'Are you sure?',
+                                                    text: 'You are about to report that the problem still exists. This will return the ticket to ICT Support for another resolution attempt.',
+                                                    icon: 'warning',
+                                                    showCancelButton: true,
+                                                    confirmButtonText: 'Yes, Submit Report',
+                                                    cancelButtonText: 'Cancel',
+                                                    confirmButtonColor: '#ef4444',
+                                                    cancelButtonColor: '#64748b',
+                                                    customClass: { popup: 'rounded-2xl', title: 'font-bold' }
+                                                });
+                                            }
+
+                                            if (confirmResult.isConfirmed) {
+                                                if (attempts >= 2) {
+                                                    changeTicketStatus(ticket.id, 'ESCALATED', ticket.assignedToId);
+                                                    addComment(ticket.id, `${reportText}\n\nAction: Ticket escalated to ICT Head after two unsuccessful resolution attempts.`);
+                                                    Toast.fire({ icon: 'success', title: 'Ticket Escalated' });
+                                                } else {
+                                                    changeTicketStatus(ticket.id, 'IN PROGRESS', ticket.assignedToId);
+                                                    addComment(ticket.id, `${reportText}\n\nAction: Reopened ticket (Problem still exists)`);
+                                                    Toast.fire({ icon: 'success', title: 'Ticket Reopened' });
+                                                }
+                                            }
                                         }
-                                    }} className="w-full px-5 py-3.5 bg-bg border border-red-500/30 text-red-500 rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-red-500/10 shadow-sm transition-all active:scale-95">
+                                    }} className={`w-full px-5 py-3.5 border rounded-xl text-[11px] font-bold uppercase tracking-widest shadow-sm transition-all ${hasBeenEscalated ? 'bg-slate-100 border-slate-300 text-slate-400 cursor-not-allowed' : 'bg-bg border-red-500/30 text-red-500 hover:bg-red-500/10 active:scale-95'}`}>
                                         Problem Still Exists
                                     </button>
                                 </>
@@ -640,56 +783,52 @@ Notes: ${referralData.notes}`;
 
       {/* Referral Modal */}
       {showReferralModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden border border-border">
-            <div className="px-8 py-5 border-b border-border flex justify-between items-center bg-bg/50">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6 bg-black/60 backdrop-blur-sm">
+          <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-xl border border-border flex flex-col max-h-[95vh] overflow-hidden">
+            
+            {/* Modal Header */}
+            <div className="px-6 py-5 md:px-8 border-b border-border flex justify-between items-center bg-bg/50 shrink-0">
               <h3 className="font-bold text-[13px] text-ink uppercase tracking-widest">Assess & Refer Externally</h3>
-              <button onClick={() => setShowReferralModal(false)} className="text-ink-muted hover:text-ink transition-colors p-1"><AlertCircle className="w-5 h-5 opacity-0"/></button>
+              <button 
+                type="button" 
+                onClick={() => setShowReferralModal(false)} 
+                className="text-ink-muted hover:text-ink hover:bg-border p-2 rounded-xl transition-colors -mr-2"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
-            <form onSubmit={handleReferralSubmit} className="p-8 space-y-6">
-              <div className="space-y-2">
-                <label className="block text-[10px] font-bold uppercase tracking-widest text-ink-muted">Reason</label>
-                <input required type="text" value={referralData.reason} onChange={e => setReferralData({...referralData, reason: e.target.value})} className="w-full px-4 py-3 bg-bg border border-border rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 shadow-sm transition-all" />
-              </div>
-              <div className="space-y-2">
-                <label className="block text-[10px] font-bold uppercase tracking-widest text-ink-muted">Service Provider</label>
-                <input required type="text" value={referralData.serviceProvider} onChange={e => setReferralData({...referralData, serviceProvider: e.target.value})} className="w-full px-4 py-3 bg-bg border border-border rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 shadow-sm transition-all" placeholder="e.g. Dell Service Center" />
-              </div>
-              <div className="grid grid-cols-2 gap-6">
+            
+            {/* Modal Body & Form */}
+            <form onSubmit={handleReferralSubmit} className="flex flex-col overflow-hidden">
+              <div className="p-6 md:p-8 space-y-6 overflow-y-auto">
                 <div className="space-y-2">
-                  <label className="block text-[10px] font-bold uppercase tracking-widest text-ink-muted">Contact Person</label>
-                  <input type="text" value={referralData.contactPerson} onChange={e => setReferralData({...referralData, contactPerson: e.target.value})} className="w-full px-4 py-3 bg-bg border border-border rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 shadow-sm transition-all" />
-                </div>
-                <div className="space-y-2">
-                  <label className="block text-[10px] font-bold uppercase tracking-widest text-ink-muted">Contact No.</label>
-                  <input type="text" value={referralData.contactNo} onChange={e => setReferralData({...referralData, contactNo: e.target.value})} className="w-full px-4 py-3 bg-bg border border-border rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 shadow-sm transition-all" />
+                  <label className="block text-[10px] font-bold uppercase tracking-widest text-ink-muted">Reason for Referral</label>
+                  <input required type="text" value={referralData.reason} onChange={e => setReferralData({...referralData, reason: e.target.value})} className="w-full px-4 py-3 bg-bg border border-border rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 shadow-sm transition-all" />
                 </div>
               </div>
-              <div className="space-y-2">
-                <label className="block text-[10px] font-bold uppercase tracking-widest text-ink-muted">Reference / Job Order No.</label>
-                <input type="text" value={referralData.referenceNumber} onChange={e => setReferralData({...referralData, referenceNumber: e.target.value})} className="w-full px-4 py-3 bg-bg border border-border rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 shadow-sm transition-all" />
-              </div>
-              <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="block text-[10px] font-bold uppercase tracking-widest text-ink-muted">Date Referred</label>
-                  <input required type="date" value={referralData.dateReferred} onChange={e => setReferralData({...referralData, dateReferred: e.target.value})} className="w-full px-4 py-3 bg-bg border border-border rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 shadow-sm transition-all" />
-                </div>
-                <div className="space-y-2">
-                  <label className="block text-[10px] font-bold uppercase tracking-widest text-ink-muted">Expected Return</label>
-                  <input type="date" value={referralData.expectedReturn} onChange={e => setReferralData({...referralData, expectedReturn: e.target.value})} className="w-full px-4 py-3 bg-bg border border-border rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 shadow-sm transition-all" />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <label className="block text-[10px] font-bold uppercase tracking-widest text-ink-muted">Notes</label>
-                <textarea rows={3} value={referralData.notes} onChange={e => setReferralData({...referralData, notes: e.target.value})} className="w-full px-4 py-3 bg-bg border border-border rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 shadow-sm transition-all resize-none" />
-              </div>
-              <div className="pt-6 flex justify-end gap-3 border-t border-border">
-                <button type="button" onClick={() => setShowReferralModal(false)} className="px-6 py-3 border border-border bg-bg text-ink-muted text-[11px] font-bold uppercase tracking-widest hover:text-ink rounded-xl transition-all shadow-sm">Cancel</button>
+              
+              {/* Modal Footer */}
+              <div className="px-6 py-5 md:px-8 border-t border-border shrink-0 bg-bg/50 flex justify-end gap-3">
+                <button type="button" onClick={() => setShowReferralModal(false)} className="px-6 py-3 border border-border bg-surface text-ink-muted text-[11px] font-bold uppercase tracking-widest hover:text-ink rounded-xl transition-all shadow-sm">Cancel</button>
                 <button type="submit" className="px-6 py-3 bg-purple-500 text-white text-[11px] font-bold uppercase tracking-widest rounded-xl hover:opacity-90 shadow-sm transition-all active:scale-95">Confirm Referral</button>
               </div>
             </form>
           </div>
         </div>
+      )}
+
+      {/* Dispatch Form Modal */}
+      {showDispatchModal && ticket && (
+        <DispatchFormModal
+          ticket={ticket}
+          asset={asset}
+          department={department}
+          onClose={() => setShowDispatchModal(false)}
+          onSave={(commentText: string) => {
+            addComment(ticket.id, commentText);
+            Toast.fire({ icon: 'success', title: 'Technician details saved' });
+          }}
+        />
       )}
     </div>
   );

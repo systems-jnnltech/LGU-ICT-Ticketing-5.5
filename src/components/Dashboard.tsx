@@ -1,11 +1,13 @@
-import React from 'react';
-import { formatDistanceToNow } from 'date-fns';
+import React, { useState } from 'react';
+import { formatDistanceToNow, format } from 'date-fns';
 import { useAppContext } from '../store/AppContext';
 import { Ticket } from '../store/mockData';
 import { getTicketSLA } from '../utils/sla';
+import { X } from 'lucide-react';
 
 export function Dashboard({ onViewTicket }: { onViewTicket?: (id: string) => void }) {
   const { tickets, assets, users, currentUser, offices, categories } = useAppContext();
+  const [viewingStaffId, setViewingStaffId] = useState<string | null>(null);
 
   let displayedTickets = tickets;
   let displayedAssets = assets;
@@ -162,29 +164,49 @@ export function Dashboard({ onViewTicket }: { onViewTicket?: (id: string) => voi
                 <thead className="bg-surface border-b border-border">
                   <tr className="text-[10px] text-ink-muted uppercase font-bold tracking-widest">
                     <th className="px-6 py-4">Ticket ID</th>
-                    <th className="px-6 py-4">Subject</th>
-                    <th className="px-6 py-4">Priority</th>
+                    <th className="px-6 py-4">Office/Department</th>
+                    <th className="px-6 py-4">Asset</th>
+                    <th className="px-6 py-4">Subject/Concern</th>
+                    <th className="px-6 py-4">Created</th>
+                    <th className="px-6 py-4">Status</th>
                   </tr>
                 </thead>
                 <tbody className="text-sm">
-                  {displayedTickets.filter(t => t.status === 'NEW').slice(0, 5).map(ticket => (
+                  {displayedTickets.filter(t => t.status === 'NEW').slice(0, 5).map(ticket => {
+                    const ticketOffice = offices.find(o => o.id === ticket.officeId);
+                    const ticketAsset = assets.find(a => a.id === ticket.assetId);
+
+                    return (
                     <tr key={ticket.id} className="border-b border-border group-last:border-none hover:bg-bg/50 transition-colors">
-                      <td className="px-6 py-5 font-bold font-mono text-accent text-[13px]">{ticket.ticketNumber}</td>
-                      <td className="px-6 py-5 text-ink font-medium truncate max-w-sm">{ticket.subject}</td>
+                      <td className="px-6 py-5 font-bold font-mono text-accent text-[13px]">
+                        <button 
+                          onClick={() => onViewTicket && onViewTicket(ticket.id)}
+                          className="hover:underline focus:outline-none text-left cursor-pointer"
+                        >
+                          {ticket.ticketNumber}
+                        </button>
+                      </td>
+                      <td className="px-6 py-5 text-ink text-xs font-medium">{ticketOffice?.name || 'N/A'}</td>
+                      <td className="px-6 py-5 text-ink text-xs font-medium">{ticketAsset ? `${ticketAsset.brand} ${ticketAsset.model}` : 'No Asset'}</td>
+                      <td className="px-6 py-5 text-ink font-medium truncate max-w-[200px]">{ticket.subject}</td>
+                      <td className="px-6 py-5 text-ink text-xs font-medium whitespace-nowrap">{format(new Date(ticket.createdAt), 'MMM d, yyyy')}</td>
                       <td className="px-6 py-5">
                         <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold tracking-widest uppercase border ${
-                          ticket.priority === 'Critical' ? 'bg-red-500/10 text-red-500 border-red-500/20' :
-                          ticket.priority === 'High' ? 'bg-orange-500/10 text-orange-500 border-orange-500/20' :
-                          ticket.priority === 'Medium' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' : 'bg-surface/10 text-ink-muted border-border'
+                          ticket.status === 'NEW' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' :
+                          ticket.status === 'IN PROGRESS' ? 'bg-orange-500/10 text-orange-500 border-orange-500/20' :
+                          ticket.status === 'ESCALATED' ? 'bg-red-500/10 text-red-500 border-red-500/20' :
+                          ticket.status === 'RESOLVED' ? 'bg-green-500/10 text-green-500 border-green-500/20' :
+                          'bg-surface border-border text-ink-muted'
                         }`}>
-                          {ticket.priority}
+                          {ticket.status}
                         </span>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                   {displayedTickets.filter(t => t.status === 'NEW').length === 0 && (
                     <tr>
-                      <td colSpan={3} className="px-6 py-12 text-center text-ink-muted font-medium">No new tickets pending.</td>
+                      <td colSpan={6} className="px-6 py-12 text-center text-ink-muted font-medium">No new tickets pending.</td>
                     </tr>
                   )}
                 </tbody>
@@ -215,21 +237,38 @@ export function Dashboard({ onViewTicket }: { onViewTicket?: (id: string) => voi
                 }
 
                 return (
-                  <div key={staff.id} className={`bg-surface p-6 rounded-2xl border border-border shadow-sm flex flex-col justify-between h-full ${cardClass}`}>
-                    <div>
-                      <div className="flex flex-wrap justify-between items-start gap-2 mb-4">
+                  <div key={staff.id} className={`bg-surface p-5 rounded-2xl border border-border shadow-sm flex flex-col justify-between h-full relative overflow-hidden group ${cardClass}`}>
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-border to-transparent opacity-50"></div>
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-bg border border-border flex items-center justify-center font-bold text-[12px] text-ink shadow-sm">
                           {staff.name.split(' ').map(n => n[0]).join('').substring(0, 2)}
                         </div>
-                        <div className={`${statusClass} border text-[9px] font-bold px-2 py-1 rounded-md uppercase tracking-widest whitespace-nowrap`}>
-                          {statusLabel}
+                        <div>
+                          <p className="text-[11px] font-bold uppercase tracking-widest text-ink truncate max-w-[100px]" title={staff.name}>{staff.name}</p>
+                          <p className="text-[10px] text-ink-muted font-medium mt-0.5">ICT Support</p>
                         </div>
                       </div>
-                      <p className="text-[11px] font-bold uppercase tracking-widest text-ink mb-1">{staff.name}</p>
                     </div>
-                    <p className={`text-3xl font-black tracking-tighter mt-4 ${active >= 6 ? 'text-red-500' : 'text-ink'}`}>
-                      {active} <span className="text-[10px] font-bold uppercase tracking-widest text-ink-muted">Active</span>
-                    </p>
+                    <div className="mt-auto pt-4 border-t border-border flex justify-between items-end">
+                      <div>
+                        <p className={`text-3xl font-black tracking-tighter leading-none ${active >= 6 ? 'text-red-500' : 'text-ink'}`}>
+                          {active}
+                        </p>
+                        <p className="text-[9px] font-bold uppercase tracking-widest text-ink-muted mt-1.5">Active Tasks</p>
+                      </div>
+                      <div className="flex flex-col items-end gap-2">
+                        <div className={`${statusClass} border text-[9px] font-bold px-2.5 py-1 rounded-md uppercase tracking-widest whitespace-nowrap shadow-sm`}>
+                          {statusLabel}
+                        </div>
+                        <button
+                          onClick={() => setViewingStaffId(staff.id)}
+                          className="text-[9px] font-bold uppercase tracking-widest text-accent hover:underline focus:outline-none cursor-pointer"
+                        >
+                          View Assigned
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 );
               })}
@@ -255,7 +294,12 @@ export function Dashboard({ onViewTicket }: { onViewTicket?: (id: string) => voi
                 ticketsNearSLA.map(({ ticket, sla }) => (
                   <div key={ticket.id} className="p-4 border border-border rounded-xl bg-bg/50 shadow-sm transition-all hover:bg-bg">
                     <div className="flex justify-between items-start mb-2">
-                      <div className="text-[13px] font-bold font-mono text-accent">{ticket.ticketNumber}</div>
+                      <button 
+                        onClick={() => onViewTicket && onViewTicket(ticket.id)}
+                        className="text-[13px] font-bold font-mono text-accent hover:underline focus:outline-none text-left cursor-pointer"
+                      >
+                        {ticket.ticketNumber}
+                      </button>
                       <div className={`text-[9px] font-bold uppercase tracking-widest px-2 py-1 rounded-md border ${sla?.isBreached ? 'bg-red-500/10 text-red-500 border-red-500/20' : 'bg-amber-500/10 text-amber-500 border-amber-500/20'}`}>
                         {sla?.isBreached ? 'BREACHED' : 'NEARING BREACH'}
                       </div>
@@ -326,6 +370,86 @@ export function Dashboard({ onViewTicket }: { onViewTicket?: (id: string) => voi
 
         </div>
       </div>
+
+      {viewingStaffId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/20 backdrop-blur-sm">
+          <div className="bg-surface w-full max-w-4xl rounded-2xl shadow-xl border border-border flex flex-col max-h-[85vh] overflow-hidden">
+            <div className="px-6 py-5 border-b border-border flex justify-between items-center bg-bg/50">
+              <h2 className="font-bold text-[11px] text-ink uppercase tracking-widest flex items-center gap-3">
+                <div className="w-2 h-4 bg-accent rounded-[1px]"></div>
+                Assigned Tickets - {users.find(u => u.id === viewingStaffId)?.name}
+              </h2>
+              <button 
+                onClick={() => setViewingStaffId(null)}
+                className="p-2 hover:bg-border rounded-lg transition-colors text-ink-muted hover:text-ink"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            
+            <div className="overflow-auto p-6">
+              {(() => {
+                const assignedTickets = tickets.filter(t => t.assignedToId === viewingStaffId && ['ASSIGNED', 'IN PROGRESS', 'PENDING'].includes(t.status));
+                
+                if (assignedTickets.length === 0) {
+                  return <div className="text-center text-ink-muted text-sm py-8 font-medium">No active tasks assigned to this staff member.</div>;
+                }
+                
+                return (
+                  <div className="bg-surface border border-border rounded-xl overflow-hidden shadow-sm">
+                    <table className="w-full text-left border-collapse">
+                      <thead className="bg-bg/50 border-b border-border">
+                        <tr className="text-[10px] text-ink-muted uppercase font-bold tracking-widest">
+                          <th className="px-6 py-4">Ticket ID</th>
+                          <th className="px-6 py-4">Status</th>
+                          <th className="px-6 py-4">Subject</th>
+                          <th className="px-6 py-4">Created</th>
+                        </tr>
+                      </thead>
+                      <tbody className="text-sm">
+                        {assignedTickets.map(ticket => (
+                          <tr key={ticket.id} className="border-b border-border group-last:border-none hover:bg-bg/50 transition-colors">
+                            <td className="px-6 py-4 font-bold font-mono text-accent text-[12px]">
+                              <button 
+                                onClick={() => {
+                                  setViewingStaffId(null);
+                                  if (onViewTicket) onViewTicket(ticket.id);
+                                }}
+                                className="hover:underline focus:outline-none text-left cursor-pointer"
+                              >
+                                {ticket.ticketNumber}
+                              </button>
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className={`px-2.5 py-1 rounded-md text-[9px] font-bold tracking-widest uppercase border shadow-sm ${
+                                ticket.status === 'NEW' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' :
+                                ticket.status === 'ASSIGNED' ? 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20' :
+                                ticket.status === 'IN PROGRESS' ? 'bg-orange-500/10 text-orange-500 border-orange-500/20' :
+                                ticket.status === 'PENDING' ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' :
+                                ticket.status === 'ESCALATED' ? 'bg-red-500/10 text-red-500 border-red-500/20' :
+                                ticket.status === 'RESOLVED' ? 'bg-green-500/10 text-green-500 border-green-500/20' :
+                                'bg-bg text-ink-muted border-border'
+                              }`}>
+                                {ticket.status}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-ink font-medium truncate max-w-[200px] text-xs">
+                              {ticket.subject}
+                            </td>
+                            <td className="px-6 py-4 text-ink-muted text-xs font-medium whitespace-nowrap">
+                              {format(new Date(ticket.createdAt), 'MMM d, yyyy')}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

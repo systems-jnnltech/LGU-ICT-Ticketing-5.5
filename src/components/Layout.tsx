@@ -165,7 +165,7 @@ export function Layout({ children, currentTab, setCurrentTab }: { children: Reac
             </div>
           </div>
         </header>
-        <div className="p-6 md:p-10 overflow-y-auto flex-1 bg-bg bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-surface/50 via-bg to-bg relative z-10">
+        <div className="p-6 md:p-10 overflow-y-auto flex-1 bg-bg bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-surface/50 via-bg to-bg relative">
           {children}
         </div>
       </main>
