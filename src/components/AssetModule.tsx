@@ -1,7 +1,7 @@
 import { QRCodeSVG } from 'qrcode.react';
 import React, { useState } from "react";
 import { useAppContext } from "../store/AppContext";
-import { ArrowLeft, ArrowDown, Monitor, Search, Edit2, Plus, X, Upload, Database } from "lucide-react";
+import { ArrowLeft, Monitor, Search, Edit2, Plus, X, Upload, Database, Activity, CheckCircle2, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
 import { BulkImportModal } from "./BulkImportModal";
 import { findOfficeForAsset } from "../lib/mappers";
@@ -171,7 +171,7 @@ export function AssetDetail({
   onBack: () => void;
   onEdit?: () => void;
 }) {
-  const { assets, offices, tickets, currentUser, users } = useAppContext();
+  const { assets, offices, tickets, currentUser } = useAppContext();
   const asset = assets.find((a) => a.id === assetId);
   const [showQR, setShowQR] = React.useState(false);
 
@@ -402,216 +402,148 @@ export function AssetDetail({
           </div>
         </div>
 
-        {/* Equipment History */}
+        {/* Compact Service & Ticket History */}
         <div className="bg-surface rounded-2xl shadow-sm border border-border overflow-hidden">
           <div className="px-6 py-5 border-b border-border bg-bg/50 flex justify-between items-center">
-            <h3 className="text-[11px] font-bold text-ink uppercase tracking-widest">
-              Service & Audit History
+            <h3 className="text-[11px] font-bold text-ink uppercase tracking-widest flex items-center gap-2">
+              <Activity className="w-4 h-4 text-ink-muted" /> Service & Ticket History
             </h3>
-            <span className="text-[10px] text-ink-muted bg-surface border border-border px-3 py-1 rounded-md font-mono font-bold tracking-widest">
+            <span className="text-[10px] text-ink-muted bg-surface border border-border px-3 py-1 rounded-md font-mono font-bold tracking-widest shadow-sm">
               RECORDS: {relatedTickets.length}
             </span>
           </div>
           
-          <div className="divide-y divide-border">
+          <div className="p-6 md:p-8">
             {relatedTickets.length === 0 ? (
-              <div className="p-10 text-center text-ink-muted text-sm font-medium">
-                No service tickets recorded.
+              <div className="py-12 text-center text-ink-muted text-sm font-medium bg-bg/50 rounded-xl border border-dashed border-border">
+                No service tickets recorded for this asset.
               </div>
             ) : (
-              <>
-                {/* Related Tickets as Repair History */}
-                {relatedTickets.map((ticket) => (
-                  <div
-                    key={ticket.id}
-                    className="p-6 md:p-8 hover:bg-bg/50 transition-colors"
-                  >
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex flex-wrap items-center gap-3">
-                        <span className="font-bold text-sm text-accent font-mono tracking-wider bg-accent/10 px-2 py-0.5 rounded border border-accent/20">
-                          #{ticket.ticketNumber}
-                        </span>
-                        <span className="font-bold text-sm text-ink">{ticket.subject}</span>
-                      </div>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded tracking-widest uppercase border ${
-                          ticket.status === 'CLOSED' ? 'bg-surface border-border text-ink-muted' :
-                          ticket.status === 'RESOLVED' ? 'bg-green-500/10 border-green-500/20 text-green-500' :
-                          ticket.status === 'ESCALATED' ? 'bg-red-500/10 border-red-500/20 text-red-500' :
-                          ticket.status === 'IN PROGRESS' ? 'bg-orange-500/10 border-orange-500/20 text-orange-500' :
-                          'bg-blue-500/10 border-blue-500/20 text-blue-500'
-                      }`}>
-                        {ticket.status}
-                      </span>
-                    </div>
-                    
-                    <p className="text-sm font-medium text-ink-muted leading-relaxed mb-6 max-w-4xl line-clamp-2">
-                      {ticket.description}
-                    </p>
-                    
-                    {/* Timeline Flow */}
-                    <div className="pt-4 pb-2 space-y-4">
-                      {/* Ticket Created */}
-                      <div className="flex justify-center">
-                        <div className="bg-surface border border-border px-4 py-2 rounded-full shadow-sm text-[11px] font-bold text-ink uppercase tracking-widest text-center">
-                          Ticket Created <br className="sm:hidden" /><span className="hidden sm:inline">•</span> <span className="text-ink-muted">{format(new Date(ticket.createdAt), "MMM d, yyyy • h:mm a")}</span>
+              <div className="space-y-6">
+                {relatedTickets.map((ticket) => {
+                  
+                  // Parse timeline events cleanly (using your exact regex logic)
+                  const actions = ticket.ictRecommendation ? ticket.ictRecommendation.split(/(?=Taken \d+:)/).filter(Boolean) : [];
+                  const parsedActions = actions.map(action => {
+                    const match = action.match(/Taken (\d+):\s+(.*?)\s+by:\s+(.*?)\n(.*)/s);
+                    if (match) {
+                      return { type: 'ict_action', attemptNumber: match[1], dateStr: match[2], date: new Date(match[2]).getTime(), by: match[3], text: match[4].trim() };
+                    }
+                    return { type: 'ict_action', attemptNumber: '?', dateStr: '', date: 0, by: 'Unknown', text: action.trim() };
+                  });
+
+                  const problemReports = ticket.comments
+                    ?.filter(c => c.text.includes('Problem Still Exists Report:'))
+                    .map(c => {
+                       const reasonMatch = c.text.match(/Reason: (.*)/);
+                       const detailsMatch = c.text.match(/Details: (.*)/);
+                       return {
+                         type: 'problem_report', date: new Date(c.createdAt).getTime(), dateStr: format(new Date(c.createdAt), "MMM d, yyyy • h:mm a"),
+                         reason: reasonMatch ? reasonMatch[1] : 'Unknown', details: detailsMatch ? detailsMatch[1] : '', isEscalation: c.text.includes('escalated to ICT Head') || c.text.includes('Escalated')
+                       };
+                    }) || [];
+
+                  const escalatedLog = ticket.comments?.find(c => c.text === 'System: Status changed to ESCALATED' || (c.text.includes('Escalated') && !c.text.includes('Problem Still Exists Report:')));
+                  const manualEscalations = [];
+                  if (escalatedLog && !problemReports.some(pr => Math.abs(pr.date - new Date(escalatedLog.createdAt).getTime()) < 5000)) {
+                    manualEscalations.push({ type: 'manual_escalation', date: new Date(escalatedLog.createdAt).getTime(), dateStr: format(new Date(escalatedLog.createdAt), "MMM d, yyyy • h:mm a") });
+                  } else if (!escalatedLog && ticket.status === 'ESCALATED' && problemReports.filter(pr => pr.isEscalation).length === 0) {
+                     manualEscalations.push({ type: 'manual_escalation', date: new Date(ticket.updatedAt).getTime(), dateStr: format(new Date(ticket.updatedAt), "MMM d, yyyy • h:mm a") });
+                  }
+
+                  const allEvents = [...parsedActions, ...problemReports, ...manualEscalations].sort((a, b) => a.date - b.date);
+
+                  return (
+                    <div key={ticket.id} className="bg-bg/50 border border-border rounded-xl p-5 shadow-sm">
+                      
+                      {/* Ticket Header */}
+                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-5 pb-5 border-b border-border">
+                        <div>
+                          <div className="flex items-center gap-3 mb-2">
+                            <span className="font-bold text-xs text-accent font-mono tracking-wider bg-accent/10 px-2 py-0.5 rounded border border-accent/20">
+                              #{ticket.ticketNumber}
+                            </span>
+                            <span className={`text-[9px] font-bold px-2 py-0.5 rounded tracking-widest uppercase border ${
+                                ticket.status === 'CLOSED' ? 'bg-surface border-border text-ink-muted' :
+                                ticket.status === 'RESOLVED' ? 'bg-green-500/10 border-green-500/20 text-green-500' :
+                                ticket.status === 'ESCALATED' ? 'bg-red-500/10 border-red-500/20 text-red-500' :
+                                ticket.status === 'IN PROGRESS' ? 'bg-orange-500/10 border-orange-500/20 text-orange-500' :
+                                'bg-blue-500/10 border-blue-500/20 text-blue-500'
+                            }`}>
+                              {ticket.status}
+                            </span>
+                          </div>
+                          <h4 className="font-bold text-ink text-[13px] leading-tight">{ticket.subject}</h4>
+                          <p className="text-xs text-ink-muted mt-1.5 max-w-3xl line-clamp-2">{ticket.description}</p>
+                        </div>
+                        <div className="text-[10px] font-bold uppercase tracking-widest text-ink-muted whitespace-nowrap shrink-0">
+                          {format(new Date(ticket.createdAt), "MMM d, yyyy")}
                         </div>
                       </div>
 
-                      {(() => {
-                        const actions = ticket.ictRecommendation ? ticket.ictRecommendation.split(/(?=Taken \d+:)/).filter(Boolean) : [];
+                      {/* Compact Vertical Timeline */}
+                      <div className="relative pl-5 ml-2 border-l-2 border-border/60 space-y-5">
                         
-                        const parsedActions = actions.map(action => {
-                          const match = action.match(/Taken (\d+):\s+(.*?)\s+by:\s+(.*?)\n(.*)/s);
-                          if (match) {
-                            return {
-                              type: 'ict_action',
-                              attemptNumber: match[1],
-                              dateStr: match[2],
-                              date: new Date(match[2]).getTime(),
-                              by: match[3],
-                              text: match[4].trim()
-                            };
-                          }
-                          return {
-                            type: 'ict_action',
-                            attemptNumber: '?',
-                            dateStr: '',
-                            date: 0,
-                            by: 'Unknown',
-                            text: action.trim()
-                          };
-                        });
+                        {/* Start Node */}
+                        <div className="relative">
+                          <div className="absolute -left-[27px] top-1 w-3 h-3 bg-blue-500 rounded-full ring-[4px] ring-bg"></div>
+                          <p className="text-xs font-bold text-ink mb-0.5">Ticket Created</p>
+                          <p className="text-[10px] text-ink-muted font-medium">{format(new Date(ticket.createdAt), "MMM d, yyyy • h:mm a")}</p>
+                        </div>
 
-                        const problemReports = ticket.comments
-                          ?.filter(c => c.text.includes('Problem Still Exists Report:'))
-                          .map(c => {
-                             const reasonMatch = c.text.match(/Reason: (.*)/);
-                             const detailsMatch = c.text.match(/Details: (.*)/);
-                             const isEscalation = c.text.includes('escalated to ICT Head') || c.text.includes('Escalated');
-                             
-                             return {
-                               type: 'problem_report',
-                               date: new Date(c.createdAt).getTime(),
-                               dateStr: format(new Date(c.createdAt), "MMM d, yyyy • h:mm a"),
-                               reason: reasonMatch ? reasonMatch[1] : 'Unknown',
-                               details: detailsMatch ? detailsMatch[1] : '',
-                               isEscalation,
-                               text: c.text
-                             };
-                          }) || [];
-
-                        // Add manual escalations that aren't tied to a problem report
-                        const escalatedLog = ticket.comments?.find(c => c.text === 'System: Status changed to ESCALATED' || (c.text.includes('Escalated') && !c.text.includes('Problem Still Exists Report:')));
-                        const manualEscalations = [];
-                        if (escalatedLog && !problemReports.some(pr => Math.abs(pr.date - new Date(escalatedLog.createdAt).getTime()) < 5000)) {
-                          manualEscalations.push({
-                            type: 'manual_escalation',
-                            date: new Date(escalatedLog.createdAt).getTime(),
-                            dateStr: format(new Date(escalatedLog.createdAt), "MMM d, yyyy • h:mm a")
-                          });
-                        } else if (!escalatedLog && ticket.status === 'ESCALATED' && problemReports.filter(pr => pr.isEscalation).length === 0) {
-                          // Fallback if status is escalated but no log found
-                           manualEscalations.push({
-                            type: 'manual_escalation',
-                            date: new Date(ticket.updatedAt).getTime(),
-                            dateStr: format(new Date(ticket.updatedAt), "MMM d, yyyy • h:mm a")
-                          });
-                        }
-
-                        const allEvents = [...parsedActions, ...problemReports, ...manualEscalations].sort((a, b) => a.date - b.date);
-
-                        return (
-                          <>
-                            {allEvents.map((ev, i) => (
-                              <React.Fragment key={i}>
-                                <div className="flex flex-col items-center">
-                                  <ArrowDown className="w-4 h-4 text-ink-muted mb-4" />
+                        {/* Middle Events */}
+                        {allEvents.map((ev, i) => (
+                          <div key={i} className="relative">
+                            {ev.type === 'ict_action' && (
+                              <>
+                                <div className="absolute -left-[25px] top-1.5 w-2 h-2 bg-orange-500 rounded-full ring-[4px] ring-bg"></div>
+                                <p className="text-xs font-bold text-ink mb-0.5">
+                                  ICT Action (Attempt #{ev.attemptNumber}) <span className="text-[10px] font-normal text-ink-muted ml-2 italic">by {ev.by}</span>
+                                </p>
+                                <p className="text-xs text-ink-muted font-medium leading-relaxed max-w-3xl mt-1">{ev.text}</p>
+                                {ev.dateStr && <p className="text-[10px] text-ink-muted font-medium mt-1.5">{ev.dateStr}</p>}
+                              </>
+                            )}
+                            
+                            {ev.type === 'problem_report' && (
+                              <>
+                                <div className="absolute -left-[25px] top-1.5 w-2 h-2 bg-red-500 rounded-full ring-[4px] ring-bg"></div>
+                                <p className="text-xs font-bold text-red-500 mb-1">Problem Still Exists (Reported by Dept)</p>
+                                <div className="text-xs text-ink-muted bg-red-500/5 border border-red-500/10 p-3 rounded-lg max-w-3xl leading-relaxed">
+                                  <span className="font-semibold text-ink">Reason:</span> {ev.reason}
+                                  {ev.details && <><br/><span className="font-semibold text-ink mt-1 block">Details:</span> {ev.details}</>}
                                 </div>
-                                
-                                {ev.type === 'ict_action' && (
-                                  <div className="w-full max-w-2xl mx-auto bg-surface border border-border rounded-xl p-5 shadow-sm mb-4">
-                                     <div className="text-[11px] font-bold text-ink uppercase tracking-widest mb-3 border-b border-border pb-3 flex flex-wrap gap-2 justify-between">
-                                        <span>Attempt #{ev.attemptNumber}</span>
-                                        <span className="text-ink-muted font-medium">{ev.dateStr}</span>
-                                     </div>
-                                     <div className="text-sm leading-relaxed mb-1">
-                                        <span className="font-bold text-ink">
-                                          {(ev.by as string).includes('ICT Head') || (ev.by as string).includes('Admin') ? 'ICT Head' : 'ICT'}: 
-                                        </span>{' '}
-                                        <span className="text-ink-muted">{ev.text as string}</span>
-                                     </div>
-                                     <div className="mt-3 text-[10px] font-bold uppercase tracking-widest text-ink-muted">
-                                        By: {ev.by as string}
-                                     </div>
-                                  </div>
-                                )}
-                                
-                                {ev.type === 'problem_report' && (
-                                  <>
-                                    <div className="w-full max-w-2xl mx-auto bg-red-500/5 border border-red-500/20 rounded-xl p-5 shadow-sm mb-4">
-                                       <div className="font-bold text-red-500 text-[11px] uppercase tracking-widest mb-3 border-b border-red-500/10 pb-3 flex flex-wrap gap-2 justify-between">
-                                          <span>Department</span>
-                                          <span className="text-red-500/70 font-medium">{ev.dateStr}</span>
-                                       </div>
-                                       <div className="font-bold text-ink text-sm mb-2">Problem Still Exists</div>
-                                       <div className="text-sm text-ink-muted leading-relaxed">
-                                          <span className="font-semibold text-ink">Reason:</span> {ev.reason as string}
-                                       </div>
-                                       {ev.details && (
-                                         <div className="text-sm text-ink-muted mt-1.5 leading-relaxed">
-                                           <span className="font-semibold text-ink">Details:</span> {ev.details as string}
-                                         </div>
-                                       )}
-                                    </div>
-
-                                    {ev.isEscalation && (
-                                      <>
-                                        <div className="flex flex-col items-center">
-                                          <ArrowDown className="w-4 h-4 text-ink-muted mb-4" />
-                                        </div>
-                                        <div className="w-full max-w-lg mx-auto bg-red-500 text-white rounded-xl p-4 text-center shadow-sm mb-4">
-                                          <span className="font-bold text-[12px] uppercase tracking-widest flex items-center justify-center gap-2">
-                                             <span className="text-base">🚨</span> ESCALATE TO ICT HEAD
-                                          </span>
-                                        </div>
-                                      </>
-                                    )}
-                                  </>
-                                )}
-
-                                {ev.type === 'manual_escalation' && (
-                                  <div className="w-full max-w-lg mx-auto bg-red-500 text-white rounded-xl p-4 text-center shadow-sm mb-4">
-                                    <span className="font-bold text-[12px] uppercase tracking-widest flex flex-col sm:flex-row items-center justify-center gap-2">
-                                       <span><span className="text-base mr-2">🚨</span> ESCALATED TO ICT HEAD</span>
-                                    </span>
-                                    <div className="text-[10px] text-white/80 font-medium mt-2">{ev.dateStr}</div>
-                                  </div>
-                                )}
-                              </React.Fragment>
-                            ))}
-                          </>
-                        );
-                      })()}
-
-                      {/* Resolved / Closed */}
-                      {['RESOLVED', 'CLOSED'].includes(ticket.status) && (
-                        <>
-                          <div className="flex flex-col items-center">
-                            <ArrowDown className="w-4 h-4 text-ink-muted mb-4" />
+                                {ev.dateStr && <p className="text-[10px] text-ink-muted font-medium mt-1.5">{ev.dateStr}</p>}
+                              </>
+                            )}
+                            
+                            {(ev.type === 'manual_escalation' || ev.isEscalation) && (
+                              <>
+                                <div className="absolute -left-[27px] top-1 w-3 h-3 bg-red-500 rounded-full ring-[4px] ring-bg shadow-[0_0_8px_rgba(239,68,68,0.5)]"></div>
+                                <p className="text-[11px] font-bold text-red-500 uppercase tracking-widest flex items-center gap-1.5">
+                                  <AlertCircle className="w-3.5 h-3.5" /> Escalated to ICT Head
+                                </p>
+                                {ev.dateStr && <p className="text-[10px] text-ink-muted font-medium mt-1">{ev.dateStr}</p>}
+                              </>
+                            )}
                           </div>
-                          <div className="flex justify-center">
-                            <div className={`px-5 py-2.5 rounded-full shadow-sm text-[11px] font-bold uppercase tracking-widest text-center flex flex-col sm:flex-row items-center gap-1 sm:gap-2 ${ticket.status === 'CLOSED' ? 'bg-surface border border-border text-ink-muted' : 'bg-green-500/10 border border-green-500/20 text-green-500'}`}>
-                              <span>Ticket {ticket.status === 'CLOSED' ? 'Closed' : 'Resolved'}</span>
-                              <span className="hidden sm:inline">•</span>
-                              <span className="opacity-80">{format(new Date(ticket.updatedAt), "MMM d, yyyy • h:mm a")}</span>
-                            </div>
+                        ))}
+
+                        {/* End Node */}
+                        {['RESOLVED', 'CLOSED'].includes(ticket.status) && (
+                          <div className="relative">
+                            <div className={`absolute -left-[27px] top-1 w-3 h-3 rounded-full ring-[4px] ring-bg ${ticket.status === 'CLOSED' ? 'bg-slate-500' : 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]'}`}></div>
+                            <p className={`text-xs font-bold mb-0.5 ${ticket.status === 'CLOSED' ? 'text-ink-muted' : 'text-green-500'}`}>
+                              Ticket {ticket.status === 'CLOSED' ? 'Closed' : 'Resolved'}
+                            </p>
+                            <p className="text-[10px] text-ink-muted font-medium">{format(new Date(ticket.updatedAt), "MMM d, yyyy • h:mm a")}</p>
                           </div>
-                        </>
-                      )}
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </>
+                  );
+                })}
+              </div>
             )}
           </div>
         </div>
