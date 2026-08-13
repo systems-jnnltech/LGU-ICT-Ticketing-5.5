@@ -1,11 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { formatDistanceToNow, format } from 'date-fns';
 import { useAppContext } from '../store/AppContext';
 import { Ticket } from '../store/mockData';
 import { getTicketSLA } from '../utils/sla';
+import { X } from 'lucide-react';
 
 export function Dashboard({ onViewTicket }: { onViewTicket?: (id: string) => void }) {
   const { tickets, assets, users, currentUser, offices, categories } = useAppContext();
+  const [viewingStaffId, setViewingStaffId] = useState<string | null>(null);
 
   let displayedTickets = tickets;
   let displayedAssets = assets;
@@ -255,8 +257,16 @@ export function Dashboard({ onViewTicket }: { onViewTicket?: (id: string) => voi
                         </p>
                         <p className="text-[9px] font-bold uppercase tracking-widest text-ink-muted mt-1.5">Active Tasks</p>
                       </div>
-                      <div className={`${statusClass} border text-[9px] font-bold px-2.5 py-1 rounded-md uppercase tracking-widest whitespace-nowrap shadow-sm mb-1`}>
-                        {statusLabel}
+                      <div className="flex flex-col items-end gap-2">
+                        <div className={`${statusClass} border text-[9px] font-bold px-2.5 py-1 rounded-md uppercase tracking-widest whitespace-nowrap shadow-sm`}>
+                          {statusLabel}
+                        </div>
+                        <button
+                          onClick={() => setViewingStaffId(staff.id)}
+                          className="text-[9px] font-bold uppercase tracking-widest text-accent hover:underline focus:outline-none cursor-pointer"
+                        >
+                          View Assigned
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -360,6 +370,86 @@ export function Dashboard({ onViewTicket }: { onViewTicket?: (id: string) => voi
 
         </div>
       </div>
+
+      {viewingStaffId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/20 backdrop-blur-sm">
+          <div className="bg-surface w-full max-w-4xl rounded-2xl shadow-xl border border-border flex flex-col max-h-[85vh] overflow-hidden">
+            <div className="px-6 py-5 border-b border-border flex justify-between items-center bg-bg/50">
+              <h2 className="font-bold text-[11px] text-ink uppercase tracking-widest flex items-center gap-3">
+                <div className="w-2 h-4 bg-accent rounded-[1px]"></div>
+                Assigned Tickets - {users.find(u => u.id === viewingStaffId)?.name}
+              </h2>
+              <button 
+                onClick={() => setViewingStaffId(null)}
+                className="p-2 hover:bg-border rounded-lg transition-colors text-ink-muted hover:text-ink"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            
+            <div className="overflow-auto p-6">
+              {(() => {
+                const assignedTickets = tickets.filter(t => t.assignedToId === viewingStaffId && ['ASSIGNED', 'IN PROGRESS', 'PENDING'].includes(t.status));
+                
+                if (assignedTickets.length === 0) {
+                  return <div className="text-center text-ink-muted text-sm py-8 font-medium">No active tasks assigned to this staff member.</div>;
+                }
+                
+                return (
+                  <div className="bg-surface border border-border rounded-xl overflow-hidden shadow-sm">
+                    <table className="w-full text-left border-collapse">
+                      <thead className="bg-bg/50 border-b border-border">
+                        <tr className="text-[10px] text-ink-muted uppercase font-bold tracking-widest">
+                          <th className="px-6 py-4">Ticket ID</th>
+                          <th className="px-6 py-4">Status</th>
+                          <th className="px-6 py-4">Subject</th>
+                          <th className="px-6 py-4">Created</th>
+                        </tr>
+                      </thead>
+                      <tbody className="text-sm">
+                        {assignedTickets.map(ticket => (
+                          <tr key={ticket.id} className="border-b border-border group-last:border-none hover:bg-bg/50 transition-colors">
+                            <td className="px-6 py-4 font-bold font-mono text-accent text-[12px]">
+                              <button 
+                                onClick={() => {
+                                  setViewingStaffId(null);
+                                  if (onViewTicket) onViewTicket(ticket.id);
+                                }}
+                                className="hover:underline focus:outline-none text-left cursor-pointer"
+                              >
+                                {ticket.ticketNumber}
+                              </button>
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className={`px-2.5 py-1 rounded-md text-[9px] font-bold tracking-widest uppercase border shadow-sm ${
+                                ticket.status === 'NEW' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' :
+                                ticket.status === 'ASSIGNED' ? 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20' :
+                                ticket.status === 'IN PROGRESS' ? 'bg-orange-500/10 text-orange-500 border-orange-500/20' :
+                                ticket.status === 'PENDING' ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' :
+                                ticket.status === 'ESCALATED' ? 'bg-red-500/10 text-red-500 border-red-500/20' :
+                                ticket.status === 'RESOLVED' ? 'bg-green-500/10 text-green-500 border-green-500/20' :
+                                'bg-bg text-ink-muted border-border'
+                              }`}>
+                                {ticket.status}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-ink font-medium truncate max-w-[200px] text-xs">
+                              {ticket.subject}
+                            </td>
+                            <td className="px-6 py-4 text-ink-muted text-xs font-medium whitespace-nowrap">
+                              {format(new Date(ticket.createdAt), 'MMM d, yyyy')}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
