@@ -45,25 +45,39 @@ export function DispatchFormModal({ ticket, asset, department, onClose, onSave }
     dateReturned: '', repairStatus: '', technicianFindings: '', actionPerformed: '', partsReplaced: '', finalRemarks: ''
   });
 
-  const isTechSaved = !!latestExtTech || (referralComment && fallbackTechData.serviceProvider !== '');
-  const isDispatchSaved = !!latestDispatch;
-  const isRepairSaved = !!latestRepair;
+  const initialTechSaved = !!latestExtTech || (referralComment && fallbackTechData.serviceProvider !== '');
+  const initialDispatchSaved = !!latestDispatch;
+  const initialRepairSaved = !!latestRepair;
+
+  const [techSavedState, setTechSavedState] = useState(initialTechSaved);
+  const [dispatchSavedState, setDispatchSavedState] = useState(initialDispatchSaved);
+  const [repairSavedState, setRepairSavedState] = useState(initialRepairSaved);
+
+  const [editTech, setEditTech] = useState(!initialTechSaved);
+  const [editDispatch, setEditDispatch] = useState(!initialDispatchSaved);
+  const [editRepair, setEditRepair] = useState(!initialRepairSaved);
 
   const handleSaveTech = () => {
     const log = `Action: ICT/Admin Update Service Provider Details`;
     onSave(`${log}\n<!-- EXT_TECH_DETAILS: ${JSON.stringify(techData)} -->`);
+    setTechSavedState(true);
+    setEditTech(false);
     Toast.fire({ icon: 'success', title: 'Technician Details Saved' });
   };
 
   const handleSaveDispatch = () => {
     const log = `Action: ICT/Admin Update Dispatch Information Details`;
     onSave(`${log}\n<!-- DISPATCH_INFO: ${JSON.stringify(dispatchData)} -->`);
+    setDispatchSavedState(true);
+    setEditDispatch(false);
     Toast.fire({ icon: 'success', title: 'Dispatch Information Saved' });
   };
 
   const handleSaveRepair = () => {
     const log = `Action: ICT/Admin Update Repair / Return Information Details`;
     onSave(`${log}\n<!-- REPAIR_INFO: ${JSON.stringify(repairData)} -->`);
+    setRepairSavedState(true);
+    setEditRepair(false);
     Toast.fire({ icon: 'success', title: 'Repair Information Saved' });
   };
 
@@ -214,9 +228,12 @@ export function DispatchFormModal({ ticket, asset, department, onClose, onSave }
           <section>
             <div className="flex justify-between items-end mb-4 pb-2 border-b border-border">
               <h3 className="text-sm font-bold text-ink uppercase tracking-widest">2. External Service Provider</h3>
-              {isTechSaved && <span className="text-green-600 bg-green-500/10 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest flex items-center gap-1"><CheckCircle2 className="w-3 h-3"/> Saved</span>}
+              <div className="flex items-center gap-2">
+                {techSavedState && !editTech && <span className="text-green-600 bg-green-500/10 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest flex items-center gap-1"><CheckCircle2 className="w-3 h-3"/> Saved</span>}
+                {techSavedState && !editTech && <button type="button" onClick={() => setEditTech(true)} className="text-[10px] font-bold uppercase tracking-widest text-accent hover:underline">Edit</button>}
+              </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 ${!editTech ? 'opacity-60 pointer-events-none' : ''}`}>
               <div>
                 <label className="text-[10px] font-bold uppercase tracking-widest text-ink-muted block mb-1">Service Provider</label>
                 <input type="text" value={techData.serviceProvider} onChange={e => setTechData({...techData, serviceProvider: e.target.value})} className="w-full px-4 py-2 bg-bg border border-border rounded-xl text-sm outline-none focus:ring-2 focus:ring-accent/50" />
@@ -254,12 +271,15 @@ export function DispatchFormModal({ ticket, asset, department, onClose, onSave }
           </section>
 
           {/* Section 3: Dispatch Information */}
-          <section className={`transition-opacity duration-300 ${!isTechSaved ? 'opacity-40 pointer-events-none' : ''}`}>
+          <section className={`transition-opacity duration-300 ${!techSavedState ? 'opacity-40 pointer-events-none' : ''}`}>
             <div className="flex justify-between items-end mb-4 pb-2 border-b border-border">
               <h3 className="text-sm font-bold text-ink uppercase tracking-widest">3. Dispatch Information</h3>
-              {isDispatchSaved && <span className="text-green-600 bg-green-500/10 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest flex items-center gap-1"><CheckCircle2 className="w-3 h-3"/> Saved</span>}
+              <div className="flex items-center gap-2">
+                {dispatchSavedState && !editDispatch && <span className="text-green-600 bg-green-500/10 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest flex items-center gap-1"><CheckCircle2 className="w-3 h-3"/> Saved</span>}
+                {dispatchSavedState && !editDispatch && <button type="button" onClick={() => setEditDispatch(true)} className="text-[10px] font-bold uppercase tracking-widest text-accent hover:underline">Edit</button>}
+              </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 ${!editDispatch ? 'opacity-60 pointer-events-none' : ''}`}>
               <div>
                 <label className="text-[10px] font-bold uppercase tracking-widest text-ink-muted block mb-1">Date Released</label>
                 <input type="date" value={dispatchData.dateReleased} onChange={(e) => setDispatchData({...dispatchData, dateReleased: e.target.value})} className="w-full px-4 py-2 bg-bg border border-border rounded-xl text-sm outline-none focus:ring-2 focus:ring-accent/50" />
@@ -285,12 +305,15 @@ export function DispatchFormModal({ ticket, asset, department, onClose, onSave }
           </section>
 
           {/* Section 4: Repair / Return Information */}
-          <section className={`transition-opacity duration-300 ${(!isTechSaved || !isDispatchSaved) ? 'opacity-40 pointer-events-none' : ''}`}>
+          <section className={`transition-opacity duration-300 ${(!techSavedState || !dispatchSavedState) ? 'opacity-40 pointer-events-none' : ''}`}>
             <div className="flex justify-between items-end mb-4 pb-2 border-b border-border">
               <h3 className="text-sm font-bold text-ink uppercase tracking-widest">4. Repair / Return Information</h3>
-              {isRepairSaved && <span className="text-green-600 bg-green-500/10 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest flex items-center gap-1"><CheckCircle2 className="w-3 h-3"/> Saved</span>}
+              <div className="flex items-center gap-2">
+                {repairSavedState && !editRepair && <span className="text-green-600 bg-green-500/10 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest flex items-center gap-1"><CheckCircle2 className="w-3 h-3"/> Saved</span>}
+                {repairSavedState && !editRepair && <button type="button" onClick={() => setEditRepair(true)} className="text-[10px] font-bold uppercase tracking-widest text-accent hover:underline">Edit</button>}
+              </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 ${!editRepair ? 'opacity-60 pointer-events-none' : ''}`}>
               <div>
                 <label className="text-[10px] font-bold uppercase tracking-widest text-ink-muted block mb-1">Date Returned</label>
                 <input type="date" value={repairData.dateReturned} onChange={(e) => setRepairData({...repairData, dateReturned: e.target.value})} className="w-full px-4 py-2 bg-bg border border-border rounded-xl text-sm outline-none focus:ring-2 focus:ring-accent/50" />
