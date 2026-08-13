@@ -1,7 +1,7 @@
 import { QRCodeSVG } from 'qrcode.react';
 import React, { useState } from "react";
 import { useAppContext } from "../store/AppContext";
-import { ArrowLeft, Monitor, Edit2, Plus, X, Upload, Database, Activity, ExternalLink } from "lucide-react";
+import { ArrowLeft, ArrowDown, Monitor, Search, Edit2, Plus, X, Upload, Database } from "lucide-react";
 import { format } from "date-fns";
 import { BulkImportModal } from "./BulkImportModal";
 import { findOfficeForAsset } from "../lib/mappers";
@@ -166,14 +166,12 @@ export function AssetDetail({
   assetId,
   onBack,
   onEdit,
-  onViewTicket,
 }: {
   assetId: string;
   onBack: () => void;
   onEdit?: () => void;
-  onViewTicket?: (ticketId: string) => void;
 }) {
-  const { assets, offices, tickets, currentUser } = useAppContext();
+  const { assets, offices, tickets, currentUser, users } = useAppContext();
   const asset = assets.find((a) => a.id === assetId);
   const [showQR, setShowQR] = React.useState(false);
 
@@ -404,204 +402,267 @@ export function AssetDetail({
           </div>
         </div>
 
-        {/* Minimalist Service & Audit History */}
+        {/* Equipment History */}
         <div className="bg-surface rounded-2xl shadow-sm border border-border overflow-hidden">
-          <div className="px-6 py-4 border-b border-border bg-bg/50 flex justify-between items-center">
-            <h3 className="text-[11px] font-bold text-ink uppercase tracking-widest flex items-center gap-2">
-              <Activity className="w-4 h-4 text-ink-muted" /> Service & Audit Timeline
+          <div className="px-6 py-5 border-b border-border bg-bg/50 flex justify-between items-center">
+            <h3 className="text-[11px] font-bold text-ink uppercase tracking-widest">
+              Service & Audit Timeline
             </h3>
-            <span className="text-[10px] text-ink-muted bg-surface border border-border px-2.5 py-0.5 rounded font-mono font-bold tracking-widest shadow-xs">
-              {relatedTickets.length} TICKETS
+            <span className="text-[10px] text-ink-muted bg-surface border border-border px-3 py-1 rounded-md font-mono font-bold tracking-widest">
+              RECORDS: {relatedTickets.length}
             </span>
           </div>
           
-          <div className="p-6 md:p-8">
+          <div className="divide-y divide-border">
             {relatedTickets.length === 0 ? (
-              <div className="py-8 text-center text-ink-muted text-xs font-medium bg-bg/30 rounded-xl border border-dashed border-border">
-                No service tickets recorded for this asset.
+              <div className="p-10 text-center text-ink-muted text-sm font-medium">
+                No service tickets recorded.
               </div>
             ) : (
-              <div className="space-y-6">
-                {relatedTickets.map((ticket) => {
-                  
-                  // Parse timeline actions
-                  const actions = ticket.ictRecommendation ? ticket.ictRecommendation.split(/(?=Taken \d+:)/).filter(Boolean) : [];
-                  const parsedActions = actions.map(action => {
-                    const match = action.match(/Taken (\d+):\s+(.*?)\s+by:\s+(.*?)\n(.*)/s);
-                    if (match) {
-                      return { type: 'ict_action', attemptNumber: match[1], dateStr: match[2], date: new Date(match[2]).getTime(), by: match[3], text: match[4].trim() };
-                    }
-                    return { type: 'ict_action', attemptNumber: '?', dateStr: '', date: 0, by: 'Unknown', text: action.trim() };
-                  });
-
-                  const problemReports = ticket.comments
-                    ?.filter(c => c.text.includes('Problem Still Exists Report:'))
-                    .map(c => {
-                       const reasonMatch = c.text.match(/Reason: (.*)/);
-                       const detailsMatch = c.text.match(/Details: (.*)/);
-                       return {
-                         type: 'problem_report', date: new Date(c.createdAt).getTime(), dateStr: format(new Date(c.createdAt), "MMM d, yyyy • h:mm a"),
-                         reason: reasonMatch ? reasonMatch[1] : 'Unknown', details: detailsMatch ? detailsMatch[1] : '', isEscalation: c.text.includes('escalated to ICT Head') || c.text.includes('Escalated')
-                       };
-                    }) || [];
-
-                  const referralReports = ticket.comments
-                    ?.filter(c => c.text.startsWith('Referred to External Technician'))
-                    .map(c => {
-                      const reasonMatch = c.text.match(/Reason: (.*)/);
-                      const providerMatch = c.text.match(/Service Provider: (.*)/);
-                      return {
-                        type: 'referral', date: new Date(c.createdAt).getTime(), dateStr: format(new Date(c.createdAt), "MMM d, yyyy • h:mm a"),
-                        reason: reasonMatch ? reasonMatch[1] : 'Unknown', provider: providerMatch ? providerMatch[1] : 'Unknown'
-                      };
-                    }) || [];
-
-                  const escalatedLog = ticket.comments?.find(c => c.text === 'System: Status changed to ESCALATED' || (c.text.includes('Escalated') && !c.text.includes('Problem Still Exists Report:')));
-                  const manualEscalations = [];
-                  if (escalatedLog && !problemReports.some(pr => Math.abs(pr.date - new Date(escalatedLog.createdAt).getTime()) < 5000)) {
-                    manualEscalations.push({ type: 'manual_escalation', date: new Date(escalatedLog.createdAt).getTime(), dateStr: format(new Date(escalatedLog.createdAt), "MMM d, yyyy • h:mm a") });
-                  } else if (!escalatedLog && ticket.status === 'ESCALATED' && problemReports.filter(pr => pr.isEscalation).length === 0) {
-                     manualEscalations.push({ type: 'manual_escalation', date: new Date(ticket.updatedAt).getTime(), dateStr: format(new Date(ticket.updatedAt), "MMM d, yyyy • h:mm a") });
-                  }
-
-                  const typeWeight: Record<string, number> = {
-                    'ict_action': 1,
-                    'problem_report': 2,
-                    'manual_escalation': 3,
-                    'referral': 4
-                  };
-
-                  const allEvents = [...parsedActions, ...problemReports, ...manualEscalations, ...referralReports].sort((a, b) => {
-                    const timeA = Math.floor(a.date / 60000);
-                    const timeB = Math.floor(b.date / 60000);
-                    if (timeA !== timeB) return timeA - timeB;
-                    return typeWeight[a.type] - typeWeight[b.type];
-                  });
-
-                  return (
-                    <div key={ticket.id} className="border border-border/80 rounded-xl bg-bg/30 p-5 space-y-4">
-                      {/* Ticket Header Bar */}
-                      <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-border/60">
-                        <div className="flex items-center gap-2.5">
-                          <span className="font-mono text-xs font-bold text-accent bg-accent/10 px-2 py-0.5 rounded border border-accent/20">
-                            #{ticket.ticketNumber}
-                          </span>
-                          <span className={`text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wider border ${
-                              ticket.status === 'CLOSED' ? 'bg-surface border-border text-ink-muted' :
-                              ticket.status === 'RESOLVED' ? 'bg-green-500/10 border-green-500/20 text-green-500' :
-                              ticket.status === 'ESCALATED' ? 'bg-red-500/10 border-red-500/20 text-red-500' :
-                              'bg-orange-500/10 border-orange-500/20 text-orange-500'
-                          }`}>
-                            {ticket.status}
-                          </span>
-                          <span className="font-bold text-xs text-ink">{ticket.subject}</span>
+              <>
+                {/* Related Tickets as Repair History */}
+                {relatedTickets.map((ticket) => (
+                  <div
+                    key={ticket.id}
+                    className="p-6 md:p-8 hover:bg-bg/50 transition-colors"
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <span className="font-bold text-sm text-accent font-mono tracking-wider bg-accent/10 px-2 py-0.5 rounded border border-accent/20">
+                          #{ticket.ticketNumber}
+                        </span>
+                        <span className="font-bold text-sm text-ink">{ticket.subject}</span>
+                      </div>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded tracking-widest uppercase border ${
+                          ticket.status === 'CLOSED' ? 'bg-surface border-border text-ink-muted' :
+                          ticket.status === 'RESOLVED' ? 'bg-green-500/10 border-green-500/20 text-green-500' :
+                          ticket.status === 'ESCALATED' ? 'bg-red-500/10 border-red-500/20 text-red-500' :
+                          ticket.status === 'IN PROGRESS' ? 'bg-orange-500/10 border-orange-500/20 text-orange-500' :
+                          'bg-blue-500/10 border-blue-500/20 text-blue-500'
+                      }`}>
+                        {ticket.status}
+                      </span>
+                    </div>
+                    
+                    <p className="text-sm font-medium text-ink-muted leading-relaxed mb-6 max-w-4xl line-clamp-2">
+                      {ticket.description}
+                    </p>
+                    
+                    {/* Timeline Flow */}
+                    <div className="pt-4 pb-2 space-y-4">
+                      {/* Ticket Created */}
+                      <div className="flex justify-center">
+                        <div className="bg-surface border border-border px-4 py-2 rounded-full shadow-sm text-[11px] font-bold text-ink uppercase tracking-widest text-center">
+                          Ticket Created <br className="sm:hidden" /><span className="hidden sm:inline">•</span> <span className="text-ink-muted">{format(new Date(ticket.createdAt), "MMM d, yyyy • h:mm a")}</span>
                         </div>
-                        {onViewTicket && (
-                          <button
-                            onClick={() => onViewTicket(ticket.id)}
-                            className="text-[10px] font-bold text-ink-muted hover:text-accent transition-colors flex items-center gap-1 uppercase tracking-wider"
-                          >
-                            <span>Open Ticket</span>
-                            <ExternalLink className="w-3 h-3" />
-                          </button>
-                        )}
                       </div>
 
-                      {/* Minimalist Git-Style Vertical Thread */}
-                      <div className="relative pl-5 ml-1 space-y-4 border-l-2 border-border/80">
+                      {(() => {
+                        const actions = ticket.ictRecommendation ? ticket.ictRecommendation.split(/(?=Taken \d+:)/).filter(Boolean) : [];
                         
-                        {/* Creation Node */}
-                        <div className="relative text-xs">
-                          <div className="absolute -left-[25px] top-1 w-2.5 h-2.5 rounded-full bg-blue-500 ring-4 ring-bg"></div>
-                          <div className="flex flex-wrap items-baseline gap-2">
-                            <span className="font-bold text-ink">Ticket Created</span>
-                            <span className="text-[10px] text-ink-muted font-mono">{format(new Date(ticket.createdAt), "MMM d, yyyy • h:mm a")}</span>
+                        const parsedActions = actions.map(action => {
+                          const match = action.match(/Taken (\d+):\s+(.*?)\s+by:\s+(.*?)\n(.*)/s);
+                          if (match) {
+                            return {
+                              type: 'ict_action',
+                              attemptNumber: match[1],
+                              dateStr: match[2],
+                              date: new Date(match[2]).getTime(),
+                              by: match[3],
+                              text: match[4].trim()
+                            };
+                          }
+                          return {
+                            type: 'ict_action',
+                            attemptNumber: '?',
+                            dateStr: '',
+                            date: 0,
+                            by: 'Unknown',
+                            text: action.trim()
+                          };
+                        });
+
+                        const problemReports = ticket.comments
+                          ?.filter(c => c.text.includes('Problem Still Exists Report:'))
+                          .map(c => {
+                             const reasonMatch = c.text.match(/Reason: (.*)/);
+                             const detailsMatch = c.text.match(/Details: (.*)/);
+                             const isEscalation = c.text.includes('escalated to ICT Head') || c.text.includes('Escalated');
+                             
+                             return {
+                               type: 'problem_report',
+                               date: new Date(c.createdAt).getTime(),
+                               dateStr: format(new Date(c.createdAt), "MMM d, yyyy • h:mm a"),
+                               reason: reasonMatch ? reasonMatch[1] : 'Unknown',
+                               details: detailsMatch ? detailsMatch[1] : '',
+                               isEscalation,
+                               text: c.text
+                             };
+                          }) || [];
+
+                        // Add manual escalations that aren't tied to a problem report
+                        const escalatedLog = ticket.comments?.find(c => c.text === 'System: Status changed to ESCALATED' || (c.text.includes('Escalated') && !c.text.includes('Problem Still Exists Report:')));
+                        const manualEscalations = [];
+                        if (escalatedLog && !problemReports.some(pr => Math.abs(pr.date - new Date(escalatedLog.createdAt).getTime()) < 5000)) {
+                          manualEscalations.push({
+                            type: 'manual_escalation',
+                            date: new Date(escalatedLog.createdAt).getTime(),
+                            dateStr: format(new Date(escalatedLog.createdAt), "MMM d, yyyy • h:mm a")
+                          });
+                        } else if (!escalatedLog && ticket.status === 'ESCALATED' && problemReports.filter(pr => pr.isEscalation).length === 0) {
+                          // Fallback if status is escalated but no log found
+                           manualEscalations.push({
+                            type: 'manual_escalation',
+                            date: new Date(ticket.updatedAt).getTime(),
+                            dateStr: format(new Date(ticket.updatedAt), "MMM d, yyyy • h:mm a")
+                          });
+                        }
+
+                        const referrals = ticket.comments?.filter(c => c.text.includes('Referred to External Technician')).map(c => {                             const reasonMatch = c.text.match(/Reason: (.*)/);                             const providerComment = ticket.comments?.find(pc => pc.text.includes('EXT_TECH_DETAILS'));                             let provider = '';                             if (providerComment) {                               const extMatch = providerComment.text.match(/<!-- EXT_TECH_DETAILS: (.*?) -->/);                               if (extMatch) {                                 try { provider = JSON.parse(extMatch[1]).serviceProvider || ''; } catch(e){}                               }                             }                             return {                               type: 'referral',                               date: new Date(c.createdAt).getTime(),                               dateStr: format(new Date(c.createdAt), "MMM d, yyyy • h:mm a"),                               reason: reasonMatch ? reasonMatch[1] : 'Unknown',                               provider                             };                        }) || [];                        const dispatches = ticket.comments?.filter(c => c.text.includes('DISPATCH_INFO')).map(c => {                             let dispatchData = null;                             const match = c.text.match(/<!-- DISPATCH_INFO: (.*?) -->/);                             if (match) {                               try { dispatchData = JSON.parse(match[1]); } catch(e){}                             }                             return {                               type: 'dispatch',                               date: new Date(c.createdAt).getTime(),                               dateStr: format(new Date(c.createdAt), "MMM d, yyyy • h:mm a"),                               dispatchData                             };                        }) || [];                        const repairs = ticket.comments?.filter(c => c.text.includes('REPAIR_INFO')).map(c => {                             let repairData = null;                             const match = c.text.match(/<!-- REPAIR_INFO: (.*?) -->/);                             if (match) {                               try { repairData = JSON.parse(match[1]); } catch(e){}                             }                             return {                               type: 'repair',                               date: new Date(c.createdAt).getTime(),                               dateStr: format(new Date(c.createdAt), "MMM d, yyyy • h:mm a"),                               repairData                             };                        }) || [];                        const allEvents = [...parsedActions, ...problemReports, ...manualEscalations, ...referrals, ...dispatches, ...repairs].sort((a, b) => a.date - b.date);
+
+                        return (
+                          <>
+                            {allEvents.map((ev, i) => (
+                              <React.Fragment key={i}>
+                                <div className="flex flex-col items-center">
+                                  <ArrowDown className="w-4 h-4 text-ink-muted mb-4" />
+                                </div>
+                                
+                                {ev.type === 'ict_action' && (
+                                  <div className="w-full max-w-2xl mx-auto bg-surface border border-border rounded-xl p-5 shadow-sm mb-4">
+                                     <div className="text-[11px] font-bold text-ink uppercase tracking-widest mb-3 border-b border-border pb-3 flex flex-wrap gap-2 justify-between">
+                                        <span>Attempt #{ev.attemptNumber}</span>
+                                        <span className="text-ink-muted font-medium">{ev.dateStr}</span>
+                                     </div>
+                                     <div className="text-sm leading-relaxed mb-1">
+                                        <span className="font-bold text-ink">
+                                          {(ev.by as string).includes('ICT Head') || (ev.by as string).includes('Admin') ? 'ICT Head' : 'ICT'}: 
+                                        </span>{' '}
+                                        <span className="text-ink-muted">{ev.text as string}</span>
+                                     </div>
+                                     <div className="mt-3 text-[10px] font-bold uppercase tracking-widest text-ink-muted">
+                                        By: {ev.by as string}
+                                     </div>
+                                  </div>
+                                )}
+                                
+                                {ev.type === 'problem_report' && (
+                                  <>
+                                    <div className="w-full max-w-2xl mx-auto bg-red-500/5 border border-red-500/20 rounded-xl p-5 shadow-sm mb-4">
+                                       <div className="font-bold text-red-500 text-[11px] uppercase tracking-widest mb-3 border-b border-red-500/10 pb-3 flex flex-wrap gap-2 justify-between">
+                                          <span>Department</span>
+                                          <span className="text-red-500/70 font-medium">{ev.dateStr}</span>
+                                       </div>
+                                       <div className="font-bold text-ink text-sm mb-2">Problem Still Exists</div>
+                                       <div className="text-sm text-ink-muted leading-relaxed">
+                                          <span className="font-semibold text-ink">Reason:</span> {ev.reason as string}
+                                       </div>
+                                       {ev.details && (
+                                         <div className="text-sm text-ink-muted mt-1.5 leading-relaxed">
+                                           <span className="font-semibold text-ink">Details:</span> {ev.details as string}
+                                         </div>
+                                       )}
+                                    </div>
+
+                                    {ev.isEscalation && (
+                                      <>
+                                        <div className="flex flex-col items-center">
+                                          <ArrowDown className="w-4 h-4 text-ink-muted mb-4" />
+                                        </div>
+                                        <div className="w-full max-w-lg mx-auto bg-red-500 text-white rounded-xl p-4 text-center shadow-sm mb-4">
+                                          <span className="font-bold text-[12px] uppercase tracking-widest flex items-center justify-center gap-2">
+                                             <span className="text-base">🚨</span> ESCALATE TO ICT HEAD
+                                          </span>
+                                        </div>
+                                      </>
+                                    )}
+                                  </>
+                                )}
+
+                                {ev.type === 'manual_escalation' && (
+                                  <div className="w-full max-w-lg mx-auto bg-red-500 text-white rounded-xl p-4 text-center shadow-sm mb-4">
+                                    <span className="font-bold text-[12px] uppercase tracking-widest flex flex-col sm:flex-row items-center justify-center gap-2">
+                                       <span><span className="text-base mr-2">🚨</span> ESCALATED TO ICT HEAD</span>
+                                    </span>
+                                    <div className="text-[10px] text-white/80 font-medium mt-2">{ev.dateStr}</div>
+                                  </div>
+                                )}
+
+                                {ev.type === 'referral' && (
+                                  <div className="w-full max-w-2xl mx-auto bg-purple-500/5 border border-purple-500/20 rounded-xl p-5 shadow-sm mb-4">
+                                     <div className="font-bold text-purple-600 text-[11px] uppercase tracking-widest mb-3 border-b border-purple-500/10 pb-3 flex flex-wrap gap-2 justify-between">
+                                        <span>Referred to External Technician</span>
+                                        <span className="text-purple-600/70 font-medium">{ev.dateStr}</span>
+                                     </div>
+                                     {ev.provider && (
+                                       <div className="text-sm text-ink-muted leading-relaxed mb-2">
+                                          <span className="font-semibold text-ink">Provider:</span> {ev.provider as string}
+                                       </div>
+                                     )}
+                                     <div className="text-sm text-ink-muted leading-relaxed">
+                                        <span className="font-semibold text-ink">Reason:</span> {ev.reason as string}
+                                     </div>
+                                  </div>
+                                )}
+
+                                {ev.type === 'dispatch' && (
+                                  <div className="w-full max-w-2xl mx-auto bg-surface border border-border rounded-xl p-5 shadow-sm mb-4">
+                                     <div className="font-bold text-ink text-[11px] uppercase tracking-widest mb-3 border-b border-border pb-3 flex flex-wrap gap-2 justify-between">
+                                        <span>Dispatch Information</span>
+                                        <span className="text-ink-muted font-medium">{ev.dateStr}</span>
+                                     </div>
+                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-ink-muted">
+                                       <div><span className="font-bold text-ink block text-[10px] uppercase tracking-widest mb-0.5">Date & Time Released</span>{(ev.dispatchData as any)?.dateReleased ? format(new Date((ev.dispatchData as any).dateReleased), 'MMM d, yyyy h:mm a') : '-'}</div>
+                                       <div><span className="font-bold text-ink block text-[10px] uppercase tracking-widest mb-0.5">Released By</span>{(ev.dispatchData as any)?.releasedBy || '-'}</div>
+                                       <div><span className="font-bold text-ink block text-[10px] uppercase tracking-widest mb-0.5">Received By (Technician)</span>{(ev.dispatchData as any)?.receivedBy || '-'}</div>
+                                       <div><span className="font-bold text-ink block text-[10px] uppercase tracking-widest mb-0.5">Contact No.</span>{(ev.dispatchData as any)?.technicianContact || '-'}</div>
+                                     </div>
+                                  </div>
+                                )}
+
+                                {ev.type === 'repair' && (
+                                  <div className="w-full max-w-2xl mx-auto bg-surface border border-border rounded-xl p-5 shadow-sm mb-4">
+                                     <div className="font-bold text-ink text-[11px] uppercase tracking-widest mb-3 border-b border-border pb-3 flex flex-wrap gap-2 justify-between">
+                                        <span>Repair / Return Information</span>
+                                        <span className="text-ink-muted font-medium">{ev.dateStr}</span>
+                                     </div>
+                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-ink-muted mb-4">
+                                       <div><span className="font-bold text-ink block text-[10px] uppercase tracking-widest mb-0.5">Date & Time Returned</span>{(ev.repairData as any)?.dateReturned ? format(new Date((ev.repairData as any).dateReturned), 'MMM d, yyyy h:mm a') : '-'}</div>
+                                       <div><span className="font-bold text-ink block text-[10px] uppercase tracking-widest mb-0.5">Status</span>{(ev.repairData as any)?.repairStatus || '-'}</div>
+                                     </div>
+                                     <div className="space-y-3 text-sm text-ink-muted border-t border-border pt-4 mt-2">
+                                       {((ev.repairData as any)?.technicianFindings) && <div><span className="font-bold text-ink block text-[10px] uppercase tracking-widest mb-0.5">Findings</span>{(ev.repairData as any)?.technicianFindings}</div>}
+                                       {((ev.repairData as any)?.actionPerformed) && <div><span className="font-bold text-ink block text-[10px] uppercase tracking-widest mb-0.5">Action Performed</span>{(ev.repairData as any)?.actionPerformed}</div>}
+                                       {((ev.repairData as any)?.partsReplaced) && <div><span className="font-bold text-ink block text-[10px] uppercase tracking-widest mb-0.5">Parts Replaced</span>{(ev.repairData as any)?.partsReplaced}</div>}
+                                       {((ev.repairData as any)?.finalRemarks) && <div><span className="font-bold text-ink block text-[10px] uppercase tracking-widest mb-0.5">Remarks</span>{(ev.repairData as any)?.finalRemarks}</div>}
+                                     </div>
+                                  </div>
+                                )}
+                              </React.Fragment>
+                            ))}
+                          </>
+                        );
+                      })()}
+
+                      {/* Resolved / Closed */}
+                      {['RESOLVED', 'CLOSED'].includes(ticket.status) && (
+                        <>
+                          <div className="flex flex-col items-center">
+                            <ArrowDown className="w-4 h-4 text-ink-muted mb-4" />
                           </div>
-                          <p className="text-xs text-ink-muted mt-1 italic">{ticket.description}</p>
-                        </div>
-
-                        {/* Chronological Action Events */}
-                        {allEvents.map((ev, i) => (
-                          <React.Fragment key={i}>
-                            
-                            {/* ICT Action */}
-                            {ev.type === 'ict_action' && (
-                              <div className="relative text-xs">
-                                <div className="absolute -left-[25px] top-1 w-2.5 h-2.5 rounded-full bg-orange-500 ring-4 ring-bg"></div>
-                                <div className="flex flex-wrap items-baseline gap-2">
-                                  <span className="font-bold text-ink">ICT Action (Attempt #{ev.attemptNumber})</span>
-                                  <span className="text-[10px] text-ink-muted italic">by {ev.by}</span>
-                                  {ev.dateStr && <span className="text-[10px] text-ink-muted font-mono ml-auto">{ev.dateStr}</span>}
-                                </div>
-                                <p className="text-xs text-ink font-medium mt-1 leading-relaxed">{ev.text as string}</p>
-                              </div>
-                            )}
-
-                            {/* Problem Still Exists */}
-                            {ev.type === 'problem_report' && (
-                              <div className="relative text-xs">
-                                <div className="absolute -left-[25px] top-1 w-2.5 h-2.5 rounded-full bg-red-500 ring-4 ring-bg"></div>
-                                <div className="flex flex-wrap items-baseline gap-2">
-                                  <span className="font-bold text-red-500">Problem Still Exists</span>
-                                  <span className="text-[10px] text-ink-muted italic">Reported by Dept</span>
-                                  {ev.dateStr && <span className="text-[10px] text-ink-muted font-mono ml-auto">{ev.dateStr}</span>}
-                                </div>
-                                <div className="mt-1.5 bg-red-500/5 border border-red-500/10 p-2.5 rounded-lg text-xs space-y-1">
-                                  <p className="text-ink"><span className="font-bold text-red-500">Reason:</span> {ev.reason as string}</p>
-                                  {ev.details && <p className="text-ink-muted"><span className="font-bold text-ink">Details:</span> {ev.details as string}</p>}
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Escalation Event */}
-                            {(ev.type === 'manual_escalation' || (ev.type === 'problem_report' && ev.isEscalation)) && (
-                              <div className="relative text-xs mt-2">
-                                <div className="absolute -left-[25px] top-1 w-2.5 h-2.5 rounded-full bg-red-500 ring-4 ring-bg animate-pulse"></div>
-                                <div className="flex items-center justify-between">
-                                  <span className="font-bold text-[11px] text-red-500 uppercase tracking-widest">
-                                    🚨 Escalated to ICT Head
-                                  </span>
-                                  {ev.dateStr && <span className="text-[10px] text-ink-muted font-mono">{ev.dateStr}</span>}
-                                </div>
-                              </div>
-                            )}
-
-                            {/* External Referral Event */}
-                            {ev.type === 'referral' && (
-                              <div className="relative text-xs">
-                                <div className="absolute -left-[25px] top-1 w-2.5 h-2.5 rounded-full bg-purple-500 ring-4 ring-bg"></div>
-                                <div className="flex flex-wrap items-baseline gap-2">
-                                  <span className="font-bold text-purple-500">Referred to External Technician</span>
-                                  {ev.dateStr && <span className="text-[10px] text-ink-muted font-mono ml-auto">{ev.dateStr}</span>}
-                                </div>
-                                <div className="mt-1.5 bg-purple-500/5 border border-purple-500/10 p-2.5 rounded-lg text-xs space-y-1">
-                                  <p className="text-ink"><span className="font-bold text-purple-500">Provider:</span> {ev.provider as string}</p>
-                                  <p className="text-ink-muted"><span className="font-bold text-ink">Reason:</span> {ev.reason as string}</p>
-                                </div>
-                              </div>
-                            )}
-
-                          </React.Fragment>
-                        ))}
-
-                        {/* Resolved/Closed Terminal Node */}
-                        {['RESOLVED', 'CLOSED'].includes(ticket.status) && (
-                          <div className="relative text-xs">
-                            <div className={`absolute -left-[25px] top-1 w-2.5 h-2.5 rounded-full ring-4 ring-bg ${ticket.status === 'CLOSED' ? 'bg-slate-500' : 'bg-green-500'}`}></div>
-                            <div className="flex flex-wrap items-baseline gap-2">
-                              <span className={`font-bold ${ticket.status === 'CLOSED' ? 'text-ink-muted' : 'text-green-500'}`}>
-                                Ticket {ticket.status === 'CLOSED' ? 'Closed' : 'Resolved'}
-                              </span>
-                              <span className="text-[10px] text-ink-muted font-mono">{format(new Date(ticket.updatedAt), "MMM d, yyyy • h:mm a")}</span>
+                          <div className="flex justify-center">
+                            <div className={`px-5 py-2.5 rounded-full shadow-sm text-[11px] font-bold uppercase tracking-widest text-center flex flex-col sm:flex-row items-center gap-1 sm:gap-2 ${ticket.status === 'CLOSED' ? 'bg-surface border border-border text-ink-muted' : 'bg-green-500/10 border border-green-500/20 text-green-500'}`}>
+                              <span>Ticket {ticket.status === 'CLOSED' ? 'Closed' : 'Resolved'}</span>
+                              <span className="hidden sm:inline">•</span>
+                              <span className="opacity-80">{format(new Date(ticket.updatedAt), "MMM d, yyyy • h:mm a")}</span>
                             </div>
                           </div>
-                        )}
-
-                      </div>
+                        </>
+                      )}
                     </div>
-                  );
-                })}
-              </div>
+                  </div>
+                ))}
+              </>
             )}
           </div>
         </div>
