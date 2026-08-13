@@ -62,21 +62,28 @@ export function AdminAnalytics() {
 
   // Export to CSV
   const exportToExcel = () => {
-    const headers = ['Ticket ID', 'Subject', 'Priority', 'Status', 'Department', 'Asset Name', 'Created At', 'Updated At', 'SLA Status'];
+    const headers = ['Ticket ID', 'Subject', 'Priority', 'Status', 'Department', 'Asset Name', 'Created At', 'Updated At', 'SLA Status', 'Constraint Trend Status'];
     const rows = filteredTickets.map(t => {
       const sla = getTicketSLA(t);
       const office = offices.find(o => o.id === t.officeId)?.name || 'Unknown';
-      const asset = assets.find(a => a.id === t.assetId)?.name || 'N/A';
+      const assetObj = assets.find(a => a.id === t.assetId);
+      const assetStr = assetObj ? `${assetObj.brand} ${assetObj.model}` : 'N/A';
+      
+      let constraintStatus = 'Open/Pending';
+      if (t.status === 'RESOLVED' || t.status === 'CLOSED') constraintStatus = 'Resolved';
+      else if (t.status === 'ESCALATED' || t.status === 'REFERRED') constraintStatus = 'Escalated';
+
       return [
          t.ticketNumber,
          `"${(t.subject || '').replace(/"/g, '""')}"`,
          t.priority,
          t.status,
          `"${office}"`,
-         `"${(asset || '').replace(/"/g, '""')}"`,
+         `"${assetStr.replace(/"/g, '""')}"`,
          t.createdAt,
          t.updatedAt,
-         sla?.isBreached ? 'Breached' : 'Within SLA'
+         sla?.isBreached ? 'Breached' : 'Within SLA',
+         constraintStatus
       ].join(',');
     });
     
@@ -84,7 +91,7 @@ export function AdminAnalytics() {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `sla_analytics_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute("download", `analytics_report_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
