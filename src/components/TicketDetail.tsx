@@ -36,7 +36,7 @@ export function TicketDetail({ ticketId, onBack }: { ticketId: string, onBack: (
     // Change ticket status to REFERRED
     changeTicketStatus(ticket.id, 'REFERRED', ticket.assignedToId);
     
-    // Log minimal system action without putting the full raw info into comments
+    // Log system action
     addComment(ticket.id, `Action: Assessed and referred to external technician (${referralData.serviceProvider || 'External Service'})`);
     
     setShowReferralModal(false);
@@ -57,7 +57,8 @@ export function TicketDetail({ ticketId, onBack }: { ticketId: string, onBack: (
   const category = categories.find(c => c.id === ticket.categoryId);
   const ictStaff = users.filter(u => u.role === 'ICT Support');
 
-  const hasReferralDetails = ticket.status === 'REFERRED' || (ticket.comments || []).some(c => c.text.includes('referred to external technician'));
+  const isAdminOrICT = currentUser?.role === 'Admin' || currentUser?.role === 'ICT Support';
+  const hasReferralDetails = ticket.status === 'REFERRED' || (ticket.comments || []).some(c => c.text.includes('referred to external technician') || c.text.includes('DISPATCH_INFO'));
 
   const handleAssign = async () => {
     if (selectedAssignee) {
@@ -265,8 +266,8 @@ export function TicketDetail({ ticketId, onBack }: { ticketId: string, onBack: (
               <div className="px-6 py-5 border-b border-border bg-bg/50 flex justify-between items-center flex-wrap gap-3">
                   <h3 className="text-[11px] font-bold text-ink uppercase tracking-widest">Discussion & Activity</h3>
                   <div className="flex items-center gap-2">
-                    {/* View Technician Details Button accessible in Discussion & Activity for Admin, ICT Support, and Dept Users */}
-                    {hasReferralDetails && (
+                    {/* View Technician Details Button - Only visible for Admin and ICT Support roles */}
+                    {isAdminOrICT && hasReferralDetails && (
                       <button
                         onClick={() => setShowDispatchModal(true)}
                         className="text-[10px] font-bold uppercase tracking-widest bg-purple-500/10 text-purple-600 border border-purple-500/20 hover:bg-purple-500/20 px-3 py-1 rounded-md shadow-sm flex items-center gap-1.5 transition-colors"
@@ -855,7 +856,10 @@ export function TicketDetail({ ticketId, onBack }: { ticketId: string, onBack: (
           asset={asset}
           department={department}
           onClose={() => setShowDispatchModal(false)}
-          onSave={(commentText: string) => addComment(ticket.id, commentText)}
+          onSave={(commentText: string) => {
+            addComment(ticket.id, commentText);
+            Toast.fire({ icon: 'success', title: 'Technician details saved' });
+          }}
         />
       )}
     </div>
