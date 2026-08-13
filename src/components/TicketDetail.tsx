@@ -20,13 +20,6 @@ export function TicketDetail({ ticketId, onBack }: { ticketId: string, onBack: (
   const [showReferralModal, setShowReferralModal] = useState(false);
   const [referralData, setReferralData] = useState({
     reason: 'Hardware repair requires specialized technician',
-    serviceProvider: '',
-    contactPerson: '',
-    contactNo: '',
-    dateReferred: '',
-    referenceNumber: '',
-    expectedReturn: '',
-    notes: ''
   });
 
   const handleReferralSubmit = (e: React.FormEvent) => {
@@ -37,15 +30,7 @@ export function TicketDetail({ ticketId, onBack }: { ticketId: string, onBack: (
     changeTicketStatus(ticket.id, 'REFERRED', ticket.assignedToId);
     
     // Log system action
-    const commentText = `Referred to External Technician
-Reason: ${referralData.reason}
-Service Provider: ${referralData.serviceProvider}
-Contact Person: ${referralData.contactPerson}
-Contact No.: ${referralData.contactNo}
-Date Referred: ${referralData.dateReferred}
-Reference Number: ${referralData.referenceNumber}
-Expected Return: ${referralData.expectedReturn}
-Notes: ${referralData.notes}`;
+    const commentText = `Referred to External Technician\nReason: ${referralData.reason}`;
     
     addComment(ticket.id, commentText);
     
@@ -301,7 +286,8 @@ Notes: ${referralData.notes}`;
                           const commentUser = users.find(u => u.id === comment.userId);
                           const isOwn = comment.userId === currentUser?.id;
                           const isAction = comment.text.startsWith('Action:');
-                          const displayText = isAction ? comment.text.replace('Action: ', '') : comment.text;
+                          const rawText = isAction ? comment.text.replace('Action: ', '') : comment.text;
+                          const displayText = rawText.replace(/<!--[\s\S]*?-->/g, '').trim();
                           
                           if (isAction) {
                               return (
@@ -312,7 +298,7 @@ Notes: ${referralData.notes}`;
                                           </div>
                                           <div className="text-left flex-1 flex flex-wrap items-center gap-1.5">
                                               <span className="text-[11px] font-bold text-ink uppercase tracking-widest">{commentUser?.name}</span>
-                                              <span className="text-[12px] font-medium text-ink-muted">{displayText}</span>
+                                              <span className="text-[12px] font-medium text-ink-muted whitespace-pre-wrap text-left">{displayText}</span>
                                           </div>
                                           <div className="text-[9px] font-bold text-ink-muted uppercase tracking-widest shrink-0">
                                               {format(new Date(comment.createdAt), 'MMM d, h:mm a')}
@@ -335,12 +321,12 @@ Notes: ${referralData.notes}`;
                                           <span className="text-xs font-bold text-ink">{commentUser?.name}</span>
                                           <span className="text-[10px] text-ink-muted uppercase tracking-widest font-bold">{format(new Date(comment.createdAt), 'MMM d, h:mm a')}</span>
                                       </div>
-                                      <div className={`px-5 py-3.5 rounded-2xl text-sm font-medium shadow-sm inline-block ${
+                                      <div className={`px-5 py-3.5 rounded-2xl text-sm font-medium shadow-sm inline-block whitespace-pre-wrap text-left ${
                                           isOwn 
                                               ? 'bg-accent text-white rounded-tr-none' 
                                               : 'bg-bg border border-border text-ink rounded-tl-none'
                                       }`}>
-                                          {comment.text}
+                                          {displayText}
                                       </div>
                                   </div>
                               </div>
@@ -506,7 +492,7 @@ Notes: ${referralData.notes}`;
                                     )}
                                     {ticket.status === 'REFERRED' && (
                                         <button onClick={() => setShowDispatchModal(true)} className="w-full px-5 py-3.5 bg-purple-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:opacity-90 shadow-sm transition-all active:scale-95 mb-3">
-                                            View Technician Details
+                                            External Technician Details
                                         </button>
                                     )}
                                     {['ESCALATED', 'REFERRED'].includes(ticket.status) && (
@@ -567,7 +553,7 @@ Notes: ${referralData.notes}`;
                             {ticket.status === 'REFERRED' && (
                                 <>
                                     <button onClick={() => setShowDispatchModal(true)} className="w-full px-5 py-3.5 bg-purple-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:opacity-90 shadow-sm transition-all active:scale-95">
-                                        View Technician Details
+                                        External Technician Details
                                     </button>
                                     <button onClick={async () => {
                                         const confirmResult = await Swal.fire({
@@ -816,40 +802,8 @@ Notes: ${referralData.notes}`;
             <form onSubmit={handleReferralSubmit} className="flex flex-col overflow-hidden">
               <div className="p-6 md:p-8 space-y-6 overflow-y-auto">
                 <div className="space-y-2">
-                  <label className="block text-[10px] font-bold uppercase tracking-widest text-ink-muted">Reason</label>
+                  <label className="block text-[10px] font-bold uppercase tracking-widest text-ink-muted">Reason for Referral</label>
                   <input required type="text" value={referralData.reason} onChange={e => setReferralData({...referralData, reason: e.target.value})} className="w-full px-4 py-3 bg-bg border border-border rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 shadow-sm transition-all" />
-                </div>
-                <div className="space-y-2">
-                  <label className="block text-[10px] font-bold uppercase tracking-widest text-ink-muted">Service Provider</label>
-                  <input required type="text" value={referralData.serviceProvider} onChange={e => setReferralData({...referralData, serviceProvider: e.target.value})} className="w-full px-4 py-3 bg-bg border border-border rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 shadow-sm transition-all" placeholder="e.g. Dell Service Center" />
-                </div>
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="block text-[10px] font-bold uppercase tracking-widest text-ink-muted">Contact Person</label>
-                    <input type="text" value={referralData.contactPerson} onChange={e => setReferralData({...referralData, contactPerson: e.target.value})} className="w-full px-4 py-3 bg-bg border border-border rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 shadow-sm transition-all" />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="block text-[10px] font-bold uppercase tracking-widest text-ink-muted">Contact No.</label>
-                    <input type="text" value={referralData.contactNo} onChange={e => setReferralData({...referralData, contactNo: e.target.value})} className="w-full px-4 py-3 bg-bg border border-border rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 shadow-sm transition-all" />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <label className="block text-[10px] font-bold uppercase tracking-widest text-ink-muted">Reference / Job Order No.</label>
-                  <input type="text" value={referralData.referenceNumber} onChange={e => setReferralData({...referralData, referenceNumber: e.target.value})} className="w-full px-4 py-3 bg-bg border border-border rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 shadow-sm transition-all" />
-                </div>
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="block text-[10px] font-bold uppercase tracking-widest text-ink-muted">Date Referred</label>
-                    <input required type="date" value={referralData.dateReferred} onChange={e => setReferralData({...referralData, dateReferred: e.target.value})} className="w-full px-4 py-3 bg-bg border border-border rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 shadow-sm transition-all" />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="block text-[10px] font-bold uppercase tracking-widest text-ink-muted">Expected Return</label>
-                    <input type="date" value={referralData.expectedReturn} onChange={e => setReferralData({...referralData, expectedReturn: e.target.value})} className="w-full px-4 py-3 bg-bg border border-border rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 shadow-sm transition-all" />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <label className="block text-[10px] font-bold uppercase tracking-widest text-ink-muted">Notes</label>
-                  <textarea rows={3} value={referralData.notes} onChange={e => setReferralData({...referralData, notes: e.target.value})} className="w-full px-4 py-3 bg-bg border border-border rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 shadow-sm transition-all resize-none" />
                 </div>
               </div>
               
