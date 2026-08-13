@@ -39,12 +39,13 @@ export function GlobalAuditLogs() {
       // Ticket comments
       if (ticket.comments) {
         ticket.comments.forEach(c => {
+          const cleanText = c.text.replace(/<!--[\s\S]*?-->/g, '').trim();
           allLogs.push({
             id: `ticket-comment-${c.id}`,
             timestamp: c.createdAt,
             type: 'TICKET_COMMENT',
             icon: Ticket,
-            description: `Comment on Ticket ${ticket.ticketNumber}: "${c.text.length > 30 ? c.text.substring(0, 30) + '...' : c.text}"`,
+            description: `Comment on Ticket ${ticket.ticketNumber}: "${cleanText.length > 30 ? cleanText.substring(0, 30) + '...' : cleanText}"`,
             userId: c.userId,
             color: 'text-blue-500'
           });
