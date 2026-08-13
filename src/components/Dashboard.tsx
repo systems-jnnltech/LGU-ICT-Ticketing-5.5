@@ -1,5 +1,5 @@
 import React from 'react';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, format } from 'date-fns';
 import { useAppContext } from '../store/AppContext';
 import { Ticket } from '../store/mockData';
 import { getTicketSLA } from '../utils/sla';
@@ -162,15 +162,32 @@ export function Dashboard({ onViewTicket }: { onViewTicket?: (id: string) => voi
                 <thead className="bg-surface border-b border-border">
                   <tr className="text-[10px] text-ink-muted uppercase font-bold tracking-widest">
                     <th className="px-6 py-4">Ticket ID</th>
-                    <th className="px-6 py-4">Subject</th>
+                    <th className="px-6 py-4">Office/Department</th>
+                    <th className="px-6 py-4">Asset</th>
+                    <th className="px-6 py-4">Subject/Concern</th>
+                    <th className="px-6 py-4">Created</th>
                     <th className="px-6 py-4">Status</th>
                   </tr>
                 </thead>
                 <tbody className="text-sm">
-                  {displayedTickets.filter(t => t.status === 'NEW').slice(0, 5).map(ticket => (
+                  {displayedTickets.filter(t => t.status === 'NEW').slice(0, 5).map(ticket => {
+                    const ticketOffice = offices.find(o => o.id === ticket.officeId);
+                    const ticketAsset = assets.find(a => a.id === ticket.assetId);
+
+                    return (
                     <tr key={ticket.id} className="border-b border-border group-last:border-none hover:bg-bg/50 transition-colors">
-                      <td className="px-6 py-5 font-bold font-mono text-accent text-[13px]">{ticket.ticketNumber}</td>
-                      <td className="px-6 py-5 text-ink font-medium truncate max-w-sm">{ticket.subject}</td>
+                      <td className="px-6 py-5 font-bold font-mono text-accent text-[13px]">
+                        <button 
+                          onClick={() => onViewTicket && onViewTicket(ticket.id)}
+                          className="hover:underline focus:outline-none text-left cursor-pointer"
+                        >
+                          {ticket.ticketNumber}
+                        </button>
+                      </td>
+                      <td className="px-6 py-5 text-ink text-xs font-medium">{ticketOffice?.name || 'N/A'}</td>
+                      <td className="px-6 py-5 text-ink text-xs font-medium">{ticketAsset?.name || 'No Asset'}</td>
+                      <td className="px-6 py-5 text-ink font-medium truncate max-w-[200px]">{ticket.subject}</td>
+                      <td className="px-6 py-5 text-ink text-xs font-medium whitespace-nowrap">{format(new Date(ticket.createdAt), 'MMM d, yyyy')}</td>
                       <td className="px-6 py-5">
                         <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold tracking-widest uppercase border ${
                           ticket.status === 'NEW' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' :
@@ -183,10 +200,11 @@ export function Dashboard({ onViewTicket }: { onViewTicket?: (id: string) => voi
                         </span>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                   {displayedTickets.filter(t => t.status === 'NEW').length === 0 && (
                     <tr>
-                      <td colSpan={3} className="px-6 py-12 text-center text-ink-muted font-medium">No new tickets pending.</td>
+                      <td colSpan={6} className="px-6 py-12 text-center text-ink-muted font-medium">No new tickets pending.</td>
                     </tr>
                   )}
                 </tbody>
@@ -266,7 +284,12 @@ export function Dashboard({ onViewTicket }: { onViewTicket?: (id: string) => voi
                 ticketsNearSLA.map(({ ticket, sla }) => (
                   <div key={ticket.id} className="p-4 border border-border rounded-xl bg-bg/50 shadow-sm transition-all hover:bg-bg">
                     <div className="flex justify-between items-start mb-2">
-                      <div className="text-[13px] font-bold font-mono text-accent">{ticket.ticketNumber}</div>
+                      <button 
+                        onClick={() => onViewTicket && onViewTicket(ticket.id)}
+                        className="text-[13px] font-bold font-mono text-accent hover:underline focus:outline-none text-left cursor-pointer"
+                      >
+                        {ticket.ticketNumber}
+                      </button>
                       <div className={`text-[9px] font-bold uppercase tracking-widest px-2 py-1 rounded-md border ${sla?.isBreached ? 'bg-red-500/10 text-red-500 border-red-500/20' : 'bg-amber-500/10 text-amber-500 border-amber-500/20'}`}>
                         {sla?.isBreached ? 'BREACHED' : 'NEARING BREACH'}
                       </div>
