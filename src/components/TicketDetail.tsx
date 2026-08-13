@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAppContext } from '../store/AppContext';
-import { ArrowLeft, Clock, User, Monitor, AlertCircle, CheckCircle2, Send, Activity, X } from 'lucide-react';
+import { ArrowLeft, Clock, User, Monitor, AlertCircle, CheckCircle2, Send, Activity, X, ExternalLink } from 'lucide-react';
 import { format } from 'date-fns';
 import { getTicketSLA } from '../utils/sla';
 import { Toast, ConfirmModal } from '../lib/toast';
@@ -32,22 +32,13 @@ export function TicketDetail({ ticketId, onBack }: { ticketId: string, onBack: (
   const handleReferralSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!ticket) return;
+    
+    // Change ticket status to REFERRED
     changeTicketStatus(ticket.id, 'REFERRED', ticket.assignedToId);
     
-    // Log the action explicitly
-    addComment(ticket.id, `Action: Assessed and referred to external technician`);
+    // Log minimal system action without putting the full raw info into comments
+    addComment(ticket.id, `Action: Assessed and referred to external technician (${referralData.serviceProvider || 'External Service'})`);
     
-    const commentText = `Referred to External Technician
-Reason: ${referralData.reason}
-Service Provider: ${referralData.serviceProvider}
-Contact Person: ${referralData.contactPerson}
-Contact No.: ${referralData.contactNo}
-Date Referred: ${referralData.dateReferred}
-Reference / Job Order No.: ${referralData.referenceNumber}
-Expected Return: ${referralData.expectedReturn}
-Notes: ${referralData.notes}`;
-    
-    addComment(ticket.id, commentText);
     setShowReferralModal(false);
     Toast.fire({ icon: 'success', title: 'Ticket Referred to External Technician' });
   };
@@ -57,7 +48,6 @@ Notes: ${referralData.notes}`;
       setSelectedAssignee(ticket.assignedToId);
     }
   }, [ticket?.assignedToId]);
-  
 
   if (!ticket) return null;
 
@@ -66,6 +56,8 @@ Notes: ${referralData.notes}`;
   const asset = assets.find(a => a.id === ticket.assetId);
   const category = categories.find(c => c.id === ticket.categoryId);
   const ictStaff = users.filter(u => u.role === 'ICT Support');
+
+  const hasReferralDetails = ticket.status === 'REFERRED' || (ticket.comments || []).some(c => c.text.includes('referred to external technician'));
 
   const handleAssign = async () => {
     if (selectedAssignee) {
@@ -88,7 +80,7 @@ Notes: ${referralData.notes}`;
     if (result.isConfirmed) {
       changeTicketStatus(ticket.id, newStatus, ticket.assignedToId);
       if (actionDesc) {
-          addComment(ticket.id, `Action: ${actionDesc}`);
+        addComment(ticket.id, `Action: ${actionDesc}`);
       }
       Toast.fire({ icon: 'success', title: `Status updated to ${newStatus}` });
     }
@@ -270,11 +262,23 @@ Notes: ${referralData.notes}`;
           
           {/* Discussion / Comments */}
           <div className="bg-surface rounded-2xl shadow-sm border border-border overflow-hidden flex flex-col">
-              <div className="px-6 py-5 border-b border-border bg-bg/50 flex justify-between items-center">
+              <div className="px-6 py-5 border-b border-border bg-bg/50 flex justify-between items-center flex-wrap gap-3">
                   <h3 className="text-[11px] font-bold text-ink uppercase tracking-widest">Discussion & Activity</h3>
-                  <span className="text-[10px] font-bold uppercase tracking-widest bg-bg border border-border text-ink-muted px-3 py-1 rounded-md shadow-sm">
-                    {ticket.comments?.filter(c => !c.text.startsWith('System: Status changed to')).length || 0} Events
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {/* View Technician Details Button accessible in Discussion & Activity for Admin, ICT Support, and Dept Users */}
+                    {hasReferralDetails && (
+                      <button
+                        onClick={() => setShowDispatchModal(true)}
+                        className="text-[10px] font-bold uppercase tracking-widest bg-purple-500/10 text-purple-600 border border-purple-500/20 hover:bg-purple-500/20 px-3 py-1 rounded-md shadow-sm flex items-center gap-1.5 transition-colors"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        View Technician Details
+                      </button>
+                    )}
+                    <span className="text-[10px] font-bold uppercase tracking-widest bg-bg border border-border text-ink-muted px-3 py-1 rounded-md shadow-sm">
+                      {ticket.comments?.filter(c => !c.text.startsWith('System: Status changed to')).length || 0} Events
+                    </span>
+                  </div>
               </div>
               <div className="p-8 space-y-8 flex-1">
                   {ticket.comments && ticket.comments.filter(c => !c.text.startsWith('System: Status changed to')).length > 0 ? (
@@ -486,14 +490,7 @@ Notes: ${referralData.notes}`;
                                         </button>
                                     )}
                                     {ticket.status === 'REFERRED' && (
-                                        <button onClick={() => {
-                                            const referralComment = ticket.comments?.find(c => c.text.startsWith('Referred to External Technician'));
-                                            if (referralComment) {
-                                                setShowDispatchModal(true);
-                                            } else {
-                                                Toast.fire({ icon: 'info', title: 'No technician details found' });
-                                            }
-                                        }} className="w-full px-5 py-3.5 bg-purple-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:opacity-90 shadow-sm transition-all active:scale-95 mb-3">
+                                        <button onClick={() => setShowDispatchModal(true)} className="w-full px-5 py-3.5 bg-purple-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:opacity-90 shadow-sm transition-all active:scale-95 mb-3">
                                             View Technician Details
                                         </button>
                                     )}
@@ -554,14 +551,7 @@ Notes: ${referralData.notes}`;
                             )}
                             {ticket.status === 'REFERRED' && (
                                 <>
-                                    <button onClick={() => {
-                                        const referralComment = ticket.comments?.find(c => c.text.startsWith('Referred to External Technician'));
-                                        if (referralComment) {
-                                            setShowDispatchModal(true);
-                                        } else {
-                                            Toast.fire({ icon: 'info', title: 'No technician details found' });
-                                        }
-                                    }} className="w-full px-5 py-3.5 bg-purple-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:opacity-90 shadow-sm transition-all active:scale-95">
+                                    <button onClick={() => setShowDispatchModal(true)} className="w-full px-5 py-3.5 bg-purple-500 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:opacity-90 shadow-sm transition-all active:scale-95">
                                         View Technician Details
                                     </button>
                                     <button onClick={async () => {
