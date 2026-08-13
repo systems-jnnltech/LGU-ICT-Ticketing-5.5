@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useAppContext } from '../store/AppContext';
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { PieChart, Pie, Cell, BarChart, Bar, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { getTicketSLA, SLA_HOURS } from '../utils/sla';
 import { isWithinInterval, parseISO, startOfDay, endOfDay } from 'date-fns';
 import { Download } from 'lucide-react';
@@ -161,6 +161,24 @@ export function AdminAnalytics() {
     boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3)'
   };
 
+  // Chart Data (Monthly Trend)
+  const currentYear = new Date().getFullYear();
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  
+  const monthlyTrendData = months.map((month, index) => {
+    const ticketsInMonth = filteredTickets.filter(t => {
+      const date = new Date(t.createdAt);
+      return date.getMonth() === index && date.getFullYear() === currentYear;
+    });
+
+    return {
+      name: month,
+      Total: ticketsInMonth.length,
+      Resolved: ticketsInMonth.filter(t => t.status === 'RESOLVED' || t.status === 'CLOSED').length,
+      Escalated: ticketsInMonth.filter(t => t.status === 'ESCALATED' || t.status === 'REFERRED').length,
+    };
+  });
+
   return (
     <div className="space-y-8 max-w-[1600px] mx-auto">
       {/* Header */}
@@ -255,6 +273,34 @@ export function AdminAnalytics() {
             <div className="text-4xl font-black text-ink tracking-tighter">{avgResolutionHrs}<span className="text-xl font-bold ml-1 text-ink-muted">hrs</span></div>
             <div className="text-[10px] text-ink-muted mt-2 font-bold uppercase tracking-widest">Avg Resolution</div>
           </div>
+        </div>
+      </div>
+
+      {/* Monthly Constraint Trend Chart */}
+      <div className="bg-surface rounded-2xl shadow-sm border border-border overflow-hidden p-6">
+        <h2 className="font-bold text-[14px] text-ink mb-6 flex justify-between items-center">
+          Monthly Constraint Trend ({currentYear})
+        </h2>
+        <div className="h-[300px] w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={monthlyTrendData} margin={{ top: 5, right: 10, bottom: 5, left: -20 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
+              <XAxis dataKey="name" axisLine={{ stroke: '#9ca3af' }} tickLine={false} tick={{ fontSize: 11, fill: '#6b7280' }} dy={10} />
+              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#6b7280' }} />
+              <Tooltip 
+                contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)', fontSize: '12px', fontWeight: 'bold' }}
+              />
+              <Legend 
+                verticalAlign="top" 
+                align="right"
+                iconType="circle"
+                wrapperStyle={{ paddingBottom: '20px', fontSize: '12px' }}
+              />
+              <Line type="monotone" dataKey="Total" stroke="#3b82f6" strokeWidth={2} dot={{ r: 4, strokeWidth: 0, fill: '#3b82f6' }} activeDot={{ r: 6 }} />
+              <Line type="monotone" dataKey="Resolved" stroke="#10b981" strokeWidth={2} dot={{ r: 4, strokeWidth: 0, fill: '#10b981' }} activeDot={{ r: 6 }} />
+              <Line type="monotone" dataKey="Escalated" stroke="#ef4444" strokeWidth={2} dot={{ r: 4, strokeWidth: 0, fill: '#ef4444' }} activeDot={{ r: 6 }} />
+            </LineChart>
+          </ResponsiveContainer>
         </div>
       </div>
 
