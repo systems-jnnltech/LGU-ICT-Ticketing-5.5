@@ -1,7 +1,7 @@
 import { QRCodeSVG } from 'qrcode.react';
 import React, { useState } from "react";
 import { useAppContext } from "../store/AppContext";
-import { ArrowLeft, ArrowDown, Monitor, Search, Edit2, Plus, X, Upload, Database } from "lucide-react";
+import { ArrowLeft, Monitor, Search, Edit2, Plus, X, Upload, Database } from "lucide-react";
 import { format } from "date-fns";
 import { BulkImportModal } from "./BulkImportModal";
 import { findOfficeForAsset } from "../lib/mappers";
@@ -171,7 +171,7 @@ export function AssetDetail({
   onBack: () => void;
   onEdit?: () => void;
 }) {
-  const { assets, offices, tickets, currentUser, users } = useAppContext();
+  const { assets, offices, tickets, currentUser } = useAppContext();
   const asset = assets.find((a) => a.id === assetId);
   const [showQR, setShowQR] = React.useState(false);
 
@@ -448,12 +448,15 @@ export function AssetDetail({
                       {ticket.description}
                     </p>
                     
-                    {/* Timeline Flow */}
-                    <div className="pt-4 pb-2 space-y-4">
-                      {/* Ticket Created */}
-                      <div className="flex justify-center">
-                        <div className="bg-surface border border-border px-4 py-2 rounded-full shadow-sm text-[11px] font-bold text-ink uppercase tracking-widest text-center">
-                          Ticket Created <br className="sm:hidden" /><span className="hidden sm:inline">•</span> <span className="text-ink-muted">{format(new Date(ticket.createdAt), "MMM d, yyyy • h:mm a")}</span>
+                    {/* Compact Timeline Flow */}
+                    <div className="relative border-l-2 border-border ml-2 md:ml-4 space-y-7 py-2 mt-4">
+                      
+                      {/* Ticket Created Node */}
+                      <div className="relative pl-6">
+                        <div className="absolute -left-[7px] top-1.5 w-3 h-3 rounded-full bg-border ring-4 ring-surface" />
+                        <div className="flex flex-wrap items-baseline gap-2 mb-0.5">
+                          <span className="text-[11px] font-bold text-ink uppercase tracking-widest">Ticket Created</span>
+                          <span className="text-xs text-ink-muted">{format(new Date(ticket.createdAt), "MMM d, yyyy • h:mm a")}</span>
                         </div>
                       </div>
 
@@ -500,7 +503,6 @@ export function AssetDetail({
                              };
                           }) || [];
 
-                        // Add manual escalations that aren't tied to a problem report
                         const escalatedLog = ticket.comments?.find(c => c.text === 'System: Status changed to ESCALATED' || (c.text.includes('Escalated') && !c.text.includes('Problem Still Exists Report:')));
                         const manualEscalations = [];
                         if (escalatedLog && !problemReports.some(pr => Math.abs(pr.date - new Date(escalatedLog.createdAt).getTime()) < 5000)) {
@@ -510,7 +512,6 @@ export function AssetDetail({
                             dateStr: format(new Date(escalatedLog.createdAt), "MMM d, yyyy • h:mm a")
                           });
                         } else if (!escalatedLog && ticket.status === 'ESCALATED' && problemReports.filter(pr => pr.isEscalation).length === 0) {
-                          // Fallback if status is escalated but no log found
                            manualEscalations.push({
                             type: 'manual_escalation',
                             date: new Date(ticket.updatedAt).getTime(),
@@ -524,118 +525,112 @@ export function AssetDetail({
                           <>
                             {allEvents.map((ev, i) => (
                               <React.Fragment key={i}>
-                                <div className="flex flex-col items-center">
-                                  <ArrowDown className="w-4 h-4 text-ink-muted mb-4" />
-                                </div>
                                 
                                 {ev.type === 'ict_action' && (
-                                  <div className="w-full max-w-2xl mx-auto bg-surface border border-border rounded-xl p-5 shadow-sm mb-4">
-                                     <div className="text-[11px] font-bold text-ink uppercase tracking-widest mb-3 border-b border-border pb-3 flex flex-wrap gap-2 justify-between">
-                                        <span>Attempt #{ev.attemptNumber}</span>
-                                        <span className="text-ink-muted font-medium">{ev.dateStr}</span>
-                                     </div>
-                                     <div className="text-sm leading-relaxed mb-1">
-                                        <span className="font-bold text-ink">
-                                          {(ev.by as string).includes('ICT Head') || (ev.by as string).includes('Admin') ? 'ICT Head' : 'ICT'}: 
-                                        </span>{' '}
-                                        <span className="text-ink-muted">{ev.text as string}</span>
-                                     </div>
-                                     <div className="mt-3 text-[10px] font-bold uppercase tracking-widest text-ink-muted">
-                                        By: {ev.by as string}
-                                     </div>
+                                  <div className="relative pl-6">
+                                    <div className="absolute -left-[7px] top-1.5 w-3 h-3 rounded-full bg-accent ring-4 ring-surface" />
+                                    <div className="flex flex-wrap items-baseline gap-2 mb-1">
+                                      <span className="text-[11px] font-bold text-ink uppercase tracking-widest">Attempt #{ev.attemptNumber}</span>
+                                      <span className="text-xs text-ink-muted">{ev.dateStr}</span>
+                                    </div>
+                                    <div className="text-sm text-ink-muted leading-relaxed">
+                                      <span className="font-semibold text-ink">
+                                        {(ev.by as string).includes('ICT Head') || (ev.by as string).includes('Admin') ? 'ICT Head' : 'ICT'}:
+                                      </span>{' '}
+                                      {ev.text as string}
+                                    </div>
+                                    <div className="mt-1 text-[10px] font-bold uppercase tracking-widest text-ink-muted">
+                                      By: {ev.by as string}
+                                    </div>
                                   </div>
                                 )}
                                 
                                 {ev.type === 'problem_report' && (
-                                  <>
-                                    <div className="w-full max-w-2xl mx-auto bg-red-500/5 border border-red-500/20 rounded-xl p-5 shadow-sm mb-4">
-                                       <div className="font-bold text-red-500 text-[11px] uppercase tracking-widest mb-3 border-b border-red-500/10 pb-3 flex flex-wrap gap-2 justify-between">
-                                          <span>Department</span>
-                                          <span className="text-red-500/70 font-medium">{ev.dateStr}</span>
-                                       </div>
-                                       <div className="font-bold text-ink text-sm mb-2">Problem Still Exists</div>
-                                       <div className="text-sm text-ink-muted leading-relaxed">
-                                          <span className="font-semibold text-ink">Reason:</span> {ev.reason as string}
-                                       </div>
-                                       {ev.details && (
-                                         <div className="text-sm text-ink-muted mt-1.5 leading-relaxed">
-                                           <span className="font-semibold text-ink">Details:</span> {ev.details as string}
-                                         </div>
-                                       )}
+                                  <div className="relative pl-6">
+                                    <div className="absolute -left-[7px] top-1.5 w-3 h-3 rounded-full bg-red-500 ring-4 ring-surface" />
+                                    <div className="flex flex-wrap items-baseline gap-2 mb-1">
+                                      <span className="text-[11px] font-bold text-red-500 uppercase tracking-widest">Problem Still Exists</span>
+                                      <span className="text-xs text-red-500/70">{ev.dateStr}</span>
                                     </div>
-
+                                    <div className="text-sm text-ink-muted leading-relaxed">
+                                      <span className="font-semibold text-ink">Reason:</span> {ev.reason as string}
+                                      {ev.details && (
+                                        <div className="mt-0.5">
+                                          <span className="font-semibold text-ink">Details:</span> {ev.details as string}
+                                        </div>
+                                      )}
+                                    </div>
                                     {ev.isEscalation && (
-                                      <>
-                                        <div className="flex flex-col items-center">
-                                          <ArrowDown className="w-4 h-4 text-ink-muted mb-4" />
-                                        </div>
-                                        <div className="w-full max-w-lg mx-auto bg-red-500 text-white rounded-xl p-4 text-center shadow-sm mb-4">
-                                          <span className="font-bold text-[12px] uppercase tracking-widest flex items-center justify-center gap-2">
-                                             <span className="text-base">🚨</span> ESCALATE TO ICT HEAD
-                                          </span>
-                                        </div>
-                                      </>
+                                       <div className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 bg-red-500/10 text-red-600 rounded text-[10px] font-bold uppercase tracking-widest">
+                                         <span className="text-[12px]">🚨</span> Escalated to ICT Head
+                                       </div>
                                     )}
-                                  </>
+                                  </div>
                                 )}
 
                                 {ev.type === 'manual_escalation' && (
-                                  <div className="w-full max-w-lg mx-auto bg-red-500 text-white rounded-xl p-4 text-center shadow-sm mb-4">
-                                    <span className="font-bold text-[12px] uppercase tracking-widest flex flex-col sm:flex-row items-center justify-center gap-2">
-                                       <span><span className="text-base mr-2">🚨</span> ESCALATED TO ICT HEAD</span>
-                                    </span>
-                                    <div className="text-[10px] text-white/80 font-medium mt-2">{ev.dateStr}</div>
+                                  <div className="relative pl-6">
+                                    <div className="absolute -left-[7px] top-1.5 w-3 h-3 rounded-full bg-red-500 ring-4 ring-surface" />
+                                    <div className="flex flex-wrap items-baseline gap-2">
+                                      <span className="text-[11px] font-bold text-red-600 uppercase tracking-widest flex items-center gap-1.5">
+                                         <span className="text-[12px]">🚨</span> Escalated to ICT Head
+                                      </span>
+                                      <span className="text-xs text-red-500/70">{ev.dateStr}</span>
+                                    </div>
                                   </div>
                                 )}
 
                                 {ev.type === 'referral' && (
-                                  <div className="w-full max-w-2xl mx-auto bg-purple-500/5 border border-purple-500/20 rounded-xl p-5 shadow-sm mb-4">
-                                     <div className="font-bold text-purple-600 text-[11px] uppercase tracking-widest mb-3 border-b border-purple-500/10 pb-3 flex flex-wrap gap-2 justify-between">
-                                        <span>Referred to External Technician</span>
-                                        <span className="text-purple-600/70 font-medium">{ev.dateStr}</span>
-                                     </div>
-                                     {ev.provider && (
-                                       <div className="text-sm text-ink-muted leading-relaxed mb-2">
-                                          <span className="font-semibold text-ink">Provider:</span> {ev.provider as string}
-                                       </div>
-                                     )}
-                                     <div className="text-sm text-ink-muted leading-relaxed">
-                                        <span className="font-semibold text-ink">Reason:</span> {ev.reason as string}
-                                     </div>
+                                  <div className="relative pl-6">
+                                    <div className="absolute -left-[7px] top-1.5 w-3 h-3 rounded-full bg-purple-500 ring-4 ring-surface" />
+                                    <div className="flex flex-wrap items-baseline gap-2 mb-1">
+                                      <span className="text-[11px] font-bold text-purple-600 uppercase tracking-widest">Referred to Ext. Tech</span>
+                                      <span className="text-xs text-purple-600/70">{ev.dateStr}</span>
+                                    </div>
+                                    <div className="text-sm text-ink-muted leading-relaxed">
+                                      {ev.provider && (
+                                        <div><span className="font-semibold text-ink">Provider:</span> {ev.provider as string}</div>
+                                      )}
+                                      <div><span className="font-semibold text-ink">Reason:</span> {ev.reason as string}</div>
+                                    </div>
                                   </div>
                                 )}
 
                                 {ev.type === 'dispatch' && (
-                                  <div className="w-full max-w-2xl mx-auto bg-surface border border-border rounded-xl p-5 shadow-sm mb-4">
-                                     <div className="font-bold text-ink text-[11px] uppercase tracking-widest mb-3 border-b border-border pb-3 flex flex-wrap gap-2 justify-between">
-                                        <span>Dispatch Information</span>
-                                        <span className="text-ink-muted font-medium">{ev.dateStr}</span>
-                                     </div>
-                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-ink-muted">
-                                       <div><span className="font-bold text-ink block text-[10px] uppercase tracking-widest mb-0.5">Date & Time Released</span>{(ev.dispatchData as any)?.dateReleased ? format(new Date((ev.dispatchData as any).dateReleased), 'MMM d, yyyy h:mm a') : '-'}</div>
-                                       <div><span className="font-bold text-ink block text-[10px] uppercase tracking-widest mb-0.5">Released By</span>{(ev.dispatchData as any)?.releasedBy || '-'}</div>
-                                       <div><span className="font-bold text-ink block text-[10px] uppercase tracking-widest mb-0.5">Received By (Technician)</span>{(ev.dispatchData as any)?.receivedBy || '-'}</div>
+                                  <div className="relative pl-6">
+                                    <div className="absolute -left-[7px] top-1.5 w-3 h-3 rounded-full bg-blue-500 ring-4 ring-surface" />
+                                    <div className="flex flex-wrap items-baseline gap-2 mb-2">
+                                      <span className="text-[11px] font-bold text-blue-600 uppercase tracking-widest">Dispatch Information</span>
+                                      <span className="text-xs text-blue-600/70">{ev.dateStr}</span>
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm text-ink-muted bg-bg/50 p-3.5 rounded-xl border border-border">
+                                       <div><span className="font-bold text-ink block text-[10px] uppercase tracking-widest mb-0.5">Released</span>{(ev.dispatchData as any)?.dateReleased ? format(new Date((ev.dispatchData as any).dateReleased), 'MMM d, yyyy h:mm a') : '-'}</div>
+                                       <div><span className="font-bold text-ink block text-[10px] uppercase tracking-widest mb-0.5">By</span>{(ev.dispatchData as any)?.releasedBy || '-'}</div>
+                                       <div><span className="font-bold text-ink block text-[10px] uppercase tracking-widest mb-0.5">Received By (Tech)</span>{(ev.dispatchData as any)?.receivedBy || '-'}</div>
                                        <div><span className="font-bold text-ink block text-[10px] uppercase tracking-widest mb-0.5">Contact No.</span>{(ev.dispatchData as any)?.technicianContact || '-'}</div>
-                                     </div>
+                                    </div>
                                   </div>
                                 )}
 
                                 {ev.type === 'repair' && (
-                                  <div className="w-full max-w-2xl mx-auto bg-surface border border-border rounded-xl p-5 shadow-sm mb-4">
-                                     <div className="font-bold text-ink text-[11px] uppercase tracking-widest mb-3 border-b border-border pb-3 flex flex-wrap gap-2 justify-between">
-                                        <span>Repair / Return Information</span>
-                                        <span className="text-ink-muted font-medium">{ev.dateStr}</span>
-                                     </div>
-                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-ink-muted mb-4">
-                                       <div><span className="font-bold text-ink block text-[10px] uppercase tracking-widest mb-0.5">Date & Time Returned</span>{(ev.repairData as any)?.dateReturned ? format(new Date((ev.repairData as any).dateReturned), 'MMM d, yyyy h:mm a') : '-'}</div>
-                                       <div><span className="font-bold text-ink block text-[10px] uppercase tracking-widest mb-0.5">Status</span>{(ev.repairData as any)?.repairStatus || '-'}</div>
-                                     </div>
-                                     <div className="space-y-3 text-sm text-ink-muted border-t border-border pt-4 mt-2">
-                                       {((ev.repairData as any)?.technicianFindings) && <div><span className="font-bold text-ink block text-[10px] uppercase tracking-widest mb-0.5">Findings</span>{(ev.repairData as any)?.technicianFindings}</div>}
-                                       {((ev.repairData as any)?.actionPerformed) && <div><span className="font-bold text-ink block text-[10px] uppercase tracking-widest mb-0.5">Action Performed</span>{(ev.repairData as any)?.actionPerformed}</div>}
-                                       {((ev.repairData as any)?.partsReplaced) && <div><span className="font-bold text-ink block text-[10px] uppercase tracking-widest mb-0.5">Parts Replaced</span>{(ev.repairData as any)?.partsReplaced}</div>}
-                                       {((ev.repairData as any)?.finalRemarks) && <div><span className="font-bold text-ink block text-[10px] uppercase tracking-widest mb-0.5">Remarks</span>{(ev.repairData as any)?.finalRemarks}</div>}
-                                     </div>
+                                  <div className="relative pl-6">
+                                    <div className="absolute -left-[7px] top-1.5 w-3 h-3 rounded-full bg-green-500 ring-4 ring-surface" />
+                                    <div className="flex flex-wrap items-baseline gap-2 mb-2">
+                                      <span className="text-[11px] font-bold text-green-600 uppercase tracking-widest">Repair / Return Information</span>
+                                      <span className="text-xs text-green-600/70">{ev.dateStr}</span>
+                                    </div>
+                                    <div className="bg-bg/50 p-3.5 rounded-xl border border-border">
+                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm text-ink-muted mb-3">
+                                         <div><span className="font-bold text-ink block text-[10px] uppercase tracking-widest mb-0.5">Returned</span>{(ev.repairData as any)?.dateReturned ? format(new Date((ev.repairData as any).dateReturned), 'MMM d, yyyy h:mm a') : '-'}</div>
+                                         <div><span className="font-bold text-ink block text-[10px] uppercase tracking-widest mb-0.5">Status</span>{(ev.repairData as any)?.repairStatus || '-'}</div>
+                                      </div>
+                                      <div className="space-y-2.5 text-sm text-ink-muted border-t border-border pt-3.5">
+                                         {((ev.repairData as any)?.technicianFindings) && <div><span className="font-bold text-ink block text-[10px] uppercase tracking-widest mb-0.5">Findings</span>{(ev.repairData as any)?.technicianFindings}</div>}
+                                         {((ev.repairData as any)?.actionPerformed) && <div><span className="font-bold text-ink block text-[10px] uppercase tracking-widest mb-0.5">Action Performed</span>{(ev.repairData as any)?.actionPerformed}</div>}
+                                         {((ev.repairData as any)?.partsReplaced) && <div><span className="font-bold text-ink block text-[10px] uppercase tracking-widest mb-0.5">Parts Replaced</span>{(ev.repairData as any)?.partsReplaced}</div>}
+                                         {((ev.repairData as any)?.finalRemarks) && <div><span className="font-bold text-ink block text-[10px] uppercase tracking-widest mb-0.5">Remarks</span>{(ev.repairData as any)?.finalRemarks}</div>}
+                                      </div>
+                                    </div>
                                   </div>
                                 )}
                               </React.Fragment>
@@ -644,20 +639,17 @@ export function AssetDetail({
                         );
                       })()}
 
-                      {/* Resolved / Closed */}
+                      {/* Resolved / Closed Node */}
                       {['RESOLVED', 'CLOSED'].includes(ticket.status) && (
-                        <>
-                          <div className="flex flex-col items-center">
-                            <ArrowDown className="w-4 h-4 text-ink-muted mb-4" />
+                        <div className="relative pl-6">
+                          <div className={`absolute -left-[7px] top-1.5 w-3 h-3 rounded-full ring-4 ring-surface ${ticket.status === 'CLOSED' ? 'bg-ink-muted' : 'bg-green-500'}`} />
+                          <div className="flex flex-wrap items-baseline gap-2">
+                            <span className={`text-[11px] font-bold uppercase tracking-widest ${ticket.status === 'CLOSED' ? 'text-ink-muted' : 'text-green-600'}`}>
+                              Ticket {ticket.status === 'CLOSED' ? 'Closed' : 'Resolved'}
+                            </span>
+                            <span className="text-xs text-ink-muted">{format(new Date(ticket.updatedAt), "MMM d, yyyy • h:mm a")}</span>
                           </div>
-                          <div className="flex justify-center">
-                            <div className={`px-5 py-2.5 rounded-full shadow-sm text-[11px] font-bold uppercase tracking-widest text-center flex flex-col sm:flex-row items-center gap-1 sm:gap-2 ${ticket.status === 'CLOSED' ? 'bg-surface border border-border text-ink-muted' : 'bg-green-500/10 border border-green-500/20 text-green-500'}`}>
-                              <span>Ticket {ticket.status === 'CLOSED' ? 'Closed' : 'Resolved'}</span>
-                              <span className="hidden sm:inline">•</span>
-                              <span className="opacity-80">{format(new Date(ticket.updatedAt), "MMM d, yyyy • h:mm a")}</span>
-                            </div>
-                          </div>
-                        </>
+                        </div>
                       )}
                     </div>
                   </div>
