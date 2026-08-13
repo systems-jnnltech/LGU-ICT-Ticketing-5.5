@@ -60,6 +60,10 @@ export function TicketDetail({ ticketId, onBack }: { ticketId: string, onBack: (
   const isAdminOrICT = currentUser?.role === 'Admin' || currentUser?.role === 'ICT Support';
   const hasReferralDetails = ticket.status === 'REFERRED' || (ticket.comments || []).some(c => c.text.includes('referred to external technician') || c.text.includes('DISPATCH_INFO'));
 
+  // Filter helper to exclude system status changes and hidden dispatch JSON metadata
+  const isPublicDiscussionComment = (c: { text: string }) => 
+    !c.text.startsWith('System: Status changed to') && !c.text.includes('DISPATCH_INFO');
+
   const handleAssign = async () => {
     if (selectedAssignee) {
       const result = await ConfirmModal.fire({
@@ -277,13 +281,13 @@ export function TicketDetail({ ticketId, onBack }: { ticketId: string, onBack: (
                       </button>
                     )}
                     <span className="text-[10px] font-bold uppercase tracking-widest bg-bg border border-border text-ink-muted px-3 py-1 rounded-md shadow-sm">
-                      {ticket.comments?.filter(c => !c.text.startsWith('System: Status changed to')).length || 0} Events
+                      {ticket.comments?.filter(isPublicDiscussionComment).length || 0} Events
                     </span>
                   </div>
               </div>
               <div className="p-8 space-y-8 flex-1">
-                  {ticket.comments && ticket.comments.filter(c => !c.text.startsWith('System: Status changed to')).length > 0 ? (
-                      ticket.comments.filter(c => !c.text.startsWith('System: Status changed to')).map(comment => {
+                  {ticket.comments && ticket.comments.filter(isPublicDiscussionComment).length > 0 ? (
+                      ticket.comments.filter(isPublicDiscussionComment).map(comment => {
                           const commentUser = users.find(u => u.id === comment.userId);
                           const isOwn = comment.userId === currentUser?.id;
                           const isAction = comment.text.startsWith('Action:');
