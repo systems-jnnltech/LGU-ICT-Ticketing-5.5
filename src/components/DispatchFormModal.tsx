@@ -1,8 +1,8 @@
-import React from 'react';
-import { X, Printer } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Printer, Save } from 'lucide-react';
 import { Toast } from '../lib/toast';
 
-export function DispatchFormModal({ ticket, asset, department, onClose }: any) {
+export function DispatchFormModal({ ticket, asset, department, onClose, onSave }: any) {
   const referralComment = ticket.comments?.find((c: any) => c.text.startsWith('Referred to External Technician'));
   const referralData = {
     reason: '', serviceProvider: '', contactPerson: '', contactNo: '', dateReferred: '', referenceNumber: '', expectedReturn: '', notes: ''
@@ -21,6 +21,31 @@ export function DispatchFormModal({ ticket, asset, department, onClose }: any) {
       if (line.startsWith('Notes: ')) referralData.notes = line.replace('Notes: ', '');
     });
   }
+
+  const dispatchComments = ticket.comments?.filter((c: any) => c.text.includes('<!-- DISPATCH_INFO:')) || [];
+  const latestDispatch = dispatchComments.length > 0 
+    ? JSON.parse(dispatchComments[dispatchComments.length - 1].text.match(/<!-- DISPATCH_INFO: (.+?) -->/)[1])
+    : {};
+
+  const [formData, setFormData] = useState({
+    dateReleased: latestDispatch.dateReleased || '',
+    releasedBy: latestDispatch.releasedBy || '',
+    receivedBy: latestDispatch.receivedBy || '',
+    technicianContact: latestDispatch.technicianContact || '',
+    dateReturned: latestDispatch.dateReturned || '',
+    repairStatus: latestDispatch.repairStatus || '',
+    technicianFindings: latestDispatch.technicianFindings || '',
+    actionPerformed: latestDispatch.actionPerformed || '',
+    partsReplaced: latestDispatch.partsReplaced || '',
+    finalRemarks: latestDispatch.finalRemarks || ''
+  });
+
+  const handleSave = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave(`Updated Dispatch/Repair Info\n<!-- DISPATCH_INFO: ${JSON.stringify(formData)} -->`);
+    Toast.fire({ icon: 'success', title: 'Information Saved' });
+    onClose();
+  };
 
   const handlePrint = () => {
     const printWindow = window.open('', '_blank');
@@ -89,6 +114,28 @@ export function DispatchFormModal({ ticket, asset, department, onClose }: any) {
             <div class="cell"><div class="cell-label">Notes:</div><div class="cell-val">${referralData.notes}</div></div>
           </div>
         </div>
+        <div class="section">
+          <div class="section-title">3. Dispatch Information</div>
+          <div class="grid">
+            <div class="cell"><div class="cell-label">Date Released:</div><div class="cell-val">${formData.dateReleased}</div></div>
+            <div class="cell"><div class="cell-label">Technician Contact:</div><div class="cell-val">${formData.technicianContact}</div></div>
+            <div class="cell"><div class="cell-label">Released By (ICT):</div><div class="cell-val">${formData.releasedBy}</div></div>
+            <div class="cell"><div class="cell-label">Received By (Tech):</div><div class="cell-val">${formData.receivedBy}</div></div>
+          </div>
+        </div>
+        <div class="section">
+          <div class="section-title">4. Repair / Return Information</div>
+          <div class="grid">
+            <div class="cell"><div class="cell-label">Date Returned:</div><div class="cell-val">${formData.dateReturned}</div></div>
+            <div class="cell"><div class="cell-label">Repair Status:</div><div class="cell-val">${formData.repairStatus}</div></div>
+          </div>
+          <div class="grid-full">
+            <div class="cell"><div class="cell-label">Technician Findings:</div><div class="cell-val">${formData.technicianFindings}</div></div>
+            <div class="cell"><div class="cell-label">Action Performed:</div><div class="cell-val">${formData.actionPerformed}</div></div>
+            <div class="cell"><div class="cell-label">Parts Replaced:</div><div class="cell-val">${formData.partsReplaced}</div></div>
+            <div class="cell"><div class="cell-label">Final Remarks:</div><div class="cell-val">${formData.finalRemarks}</div></div>
+          </div>
+        </div>
         <div class="signatures">
           <div class="sig-box">
             <div class="sig-line"></div>
@@ -151,14 +198,74 @@ export function DispatchFormModal({ ticket, asset, department, onClose }: any) {
               <div className="md:col-span-2"><span className="text-ink-muted block text-xs uppercase tracking-wider mb-1">Notes</span><span className="font-medium text-ink whitespace-pre-wrap">{referralData.notes || '-'}</span></div>
             </div>
           </section>
+
+          <form id="dispatchForm" onSubmit={handleSave} className="space-y-8">
+            <section>
+              <h3 className="text-sm font-bold text-ink uppercase tracking-widest mb-4 pb-2 border-b border-border">3. Dispatch Information</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-ink-muted block mb-1">Date Released</label>
+                  <input type="date" value={formData.dateReleased} onChange={(e) => setFormData({...formData, dateReleased: e.target.value})} className="w-full px-4 py-2 bg-bg border border-border rounded-xl text-sm outline-none focus:ring-2 focus:ring-accent/50" />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-ink-muted block mb-1">Released By (ICT)</label>
+                  <input type="text" value={formData.releasedBy} onChange={(e) => setFormData({...formData, releasedBy: e.target.value})} className="w-full px-4 py-2 bg-bg border border-border rounded-xl text-sm outline-none focus:ring-2 focus:ring-accent/50" />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-ink-muted block mb-1">Received By (Technician)</label>
+                  <input type="text" value={formData.receivedBy} onChange={(e) => setFormData({...formData, receivedBy: e.target.value})} className="w-full px-4 py-2 bg-bg border border-border rounded-xl text-sm outline-none focus:ring-2 focus:ring-accent/50" />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-ink-muted block mb-1">Technician Contact No.</label>
+                  <input type="text" value={formData.technicianContact} onChange={(e) => setFormData({...formData, technicianContact: e.target.value})} className="w-full px-4 py-2 bg-bg border border-border rounded-xl text-sm outline-none focus:ring-2 focus:ring-accent/50" />
+                </div>
+              </div>
+            </section>
+
+            <section>
+              <h3 className="text-sm font-bold text-ink uppercase tracking-widest mb-4 pb-2 border-b border-border">4. Repair / Return Information</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-ink-muted block mb-1">Date Returned</label>
+                  <input type="date" value={formData.dateReturned} onChange={(e) => setFormData({...formData, dateReturned: e.target.value})} className="w-full px-4 py-2 bg-bg border border-border rounded-xl text-sm outline-none focus:ring-2 focus:ring-accent/50" />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-ink-muted block mb-1">Repair Status</label>
+                  <select value={formData.repairStatus} onChange={(e) => setFormData({...formData, repairStatus: e.target.value})} className="w-full px-4 py-2 bg-bg border border-border rounded-xl text-sm outline-none focus:ring-2 focus:ring-accent/50 appearance-none">
+                    <option value="">Select Status</option>
+                    <option value="Repaired">Repaired</option>
+                    <option value="Partially Repaired">Partially Repaired</option>
+                    <option value="Not Repaired">Not Repaired</option>
+                    <option value="For Further Assessment">For Further Assessment</option>
+                  </select>
+                </div>
+                <div className="md:col-span-2">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-ink-muted block mb-1">Technician Findings</label>
+                  <textarea rows={2} value={formData.technicianFindings} onChange={(e) => setFormData({...formData, technicianFindings: e.target.value})} className="w-full px-4 py-2 bg-bg border border-border rounded-xl text-sm outline-none focus:ring-2 focus:ring-accent/50 resize-none"></textarea>
+                </div>
+                <div className="md:col-span-2">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-ink-muted block mb-1">Action / Repair Performed</label>
+                  <textarea rows={2} value={formData.actionPerformed} onChange={(e) => setFormData({...formData, actionPerformed: e.target.value})} className="w-full px-4 py-2 bg-bg border border-border rounded-xl text-sm outline-none focus:ring-2 focus:ring-accent/50 resize-none"></textarea>
+                </div>
+                <div className="md:col-span-2">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-ink-muted block mb-1">Parts Replaced</label>
+                  <textarea rows={2} value={formData.partsReplaced} onChange={(e) => setFormData({...formData, partsReplaced: e.target.value})} className="w-full px-4 py-2 bg-bg border border-border rounded-xl text-sm outline-none focus:ring-2 focus:ring-accent/50 resize-none"></textarea>
+                </div>
+                <div className="md:col-span-2">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-ink-muted block mb-1">Final Remarks</label>
+                  <textarea rows={2} value={formData.finalRemarks} onChange={(e) => setFormData({...formData, finalRemarks: e.target.value})} className="w-full px-4 py-2 bg-bg border border-border rounded-xl text-sm outline-none focus:ring-2 focus:ring-accent/50 resize-none"></textarea>
+                </div>
+              </div>
+            </section>
+          </form>
         </div>
 
         <div className="p-6 border-t border-border bg-surface rounded-b-2xl flex items-center justify-end gap-3 shrink-0">
-          <button type="button" onClick={onClose} className="px-5 py-2.5 bg-bg border border-border text-ink-muted rounded-xl text-[11px] font-bold uppercase tracking-widest hover:text-ink transition-colors">
-            Close
-          </button>
-          <button type="button" onClick={handlePrint} className="px-5 py-2.5 bg-accent text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:opacity-90 shadow-sm transition-all flex items-center gap-2">
+          <button type="button" onClick={handlePrint} className="px-5 py-2.5 bg-bg border border-border text-ink rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-surface transition-colors flex items-center gap-2">
             <Printer className="w-4 h-4" /> Print Dispatch Form
+          </button>
+          <button type="submit" form="dispatchForm" className="px-5 py-2.5 bg-accent text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:opacity-90 shadow-sm transition-all flex items-center gap-2">
+            <Save className="w-4 h-4" /> Save Information
           </button>
         </div>
       </div>
