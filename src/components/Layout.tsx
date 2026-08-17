@@ -59,7 +59,7 @@ export function Layout({ children, currentTab, setCurrentTab }: { children: Reac
             {(!isCollapsed || isMobileOpen) && (
               <div className="flex flex-col whitespace-nowrap">
                 <span className="font-black text-sm text-ink tracking-tight">ICT Ticket Management</span>
-                <span className="text-[9px] font-bold italic text-accent uppercase tracking-widest">Municipality Of Malungon</span>
+                <span className="text-[7px] font-bold italic text-accent uppercase tracking-widest">Municipality Of Malungon</span>
               </div>
             )}
           </div>
