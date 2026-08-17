@@ -37,7 +37,7 @@ export function Login() {
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-accent/20 via-accent to-accent/20"></div>
 
         <div className="text-center mb-10">
-          <h1 className="text-[2.5rem] font-black mb-3 tracking-tighter text-ink leading-none">LGU ICT Terminal</h1>
+          <h1 className="text-[2.5rem] font-black mb-3 tracking-tighter text-ink leading-none">ICT Ticket Hub</h1>
           <p className="text-sm font-medium text-ink-muted">Select a mock user profile to initialize the session</p>
         </div>
         
