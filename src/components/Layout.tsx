@@ -57,9 +57,9 @@ export function Layout({ children, currentTab, setCurrentTab }: { children: Reac
               <img src="/LGU_LOGO1.png" alt="LGU Logo" className="w-8 h-8 object-contain" />
             </div>
             {(!isCollapsed || isMobileOpen) && (
-              <div className="flex flex-col whitespace-nowrap">
-                <span className="font-black text-sm text-ink tracking-tight">ICT Ticket Management</span>
-                <span className="text-[7px] font-bold italic text-accent uppercase tracking-widest">Municipality Of Malungon</span>
+              <div className="flex flex-col min-w-0">
+                <span className="font-black text-[14px] text-ink tracking-tight whitespace-nowrap">ICT Ticket Management</span>
+                <span className="text-[7px] font-bold italic text-accent uppercase tracking-widest whitespace-nowrap">Municipality Of Malungon</span>
               </div>
             )}
           </div>
