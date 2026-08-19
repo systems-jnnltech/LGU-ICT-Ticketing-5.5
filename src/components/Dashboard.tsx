@@ -82,7 +82,7 @@ export function Dashboard({ onViewTicket }: { onViewTicket?: (id: string) => voi
 
       {/* Primary Metrics */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
-        <StatCard title="Total Tickets" value={tickets.length} borderClass="border-t-[3px] border-t-border" />
+        <StatCard title="Total Tickets" value={displayedTickets.length} borderClass="border-t-[3px] border-t-border" />
         <StatCard title="New Tasks" value={newTickets} colorClass="text-accent" borderClass="border-t-[3px] border-t-accent" />
         <StatCard title="In Progress" value={inProgress + assigned} colorClass="text-amber-500" borderClass="border-t-[3px] border-t-amber-500" />
         <StatCard title="Resolved" value={resolved} colorClass="text-green-500" borderClass="border-t-[3px] border-t-green-500" />
