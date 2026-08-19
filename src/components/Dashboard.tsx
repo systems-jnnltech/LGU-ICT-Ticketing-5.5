@@ -280,42 +280,44 @@ export function Dashboard({ onViewTicket }: { onViewTicket?: (id: string) => voi
         <div className="col-span-12 xl:col-span-4 space-y-8 flex flex-col">
           
           {/* SLA Watchlist */}
-          <div className="bg-surface rounded-2xl shadow-sm border border-border overflow-hidden flex flex-col">
-            <div className="px-6 py-5 border-b border-border bg-bg/50">
-              <h2 className="font-bold text-[11px] text-ink uppercase tracking-widest flex items-center gap-3">
-                <div className="w-2 h-4 bg-purple-500 rounded-[1px]"></div>
-                SLA Watchlist
-              </h2>
-            </div>
-            <div className="p-6 space-y-4 flex-1">
-              {ticketsNearSLA.length === 0 ? (
-                <div className="text-sm text-ink-muted font-medium text-center py-8">No tickets nearing SLA breach.</div>
-              ) : (
-                ticketsNearSLA.map(({ ticket, sla }) => (
-                  <div key={ticket.id} className="p-4 border border-border rounded-xl bg-bg/50 shadow-sm transition-all hover:bg-bg">
-                    <div className="flex justify-between items-start mb-2">
-                      <button 
-                        onClick={() => onViewTicket && onViewTicket(ticket.id)}
-                        className="text-[13px] font-bold font-mono text-accent hover:underline focus:outline-none text-left cursor-pointer"
-                      >
-                        {ticket.ticketNumber}
-                      </button>
-                      <div className={`text-[9px] font-bold uppercase tracking-widest px-2 py-1 rounded-md border ${sla?.isBreached ? 'bg-red-500/10 text-red-500 border-red-500/20' : 'bg-amber-500/10 text-amber-500 border-amber-500/20'}`}>
-                        {sla?.isBreached ? 'BREACHED' : 'NEARING BREACH'}
+          {currentUser?.role === 'Admin' && (
+            <div className="bg-surface rounded-2xl shadow-sm border border-border overflow-hidden flex flex-col">
+              <div className="px-6 py-5 border-b border-border bg-bg/50">
+                <h2 className="font-bold text-[11px] text-ink uppercase tracking-widest flex items-center gap-3">
+                  <div className="w-2 h-4 bg-purple-500 rounded-[1px]"></div>
+                  SLA Watchlist
+                </h2>
+              </div>
+              <div className="p-6 space-y-4 flex-1">
+                {ticketsNearSLA.length === 0 ? (
+                  <div className="text-sm text-ink-muted font-medium text-center py-8">No tickets nearing SLA breach.</div>
+                ) : (
+                  ticketsNearSLA.map(({ ticket, sla }) => (
+                    <div key={ticket.id} className="p-4 border border-border rounded-xl bg-bg/50 shadow-sm transition-all hover:bg-bg">
+                      <div className="flex justify-between items-start mb-2">
+                        <button 
+                          onClick={() => onViewTicket && onViewTicket(ticket.id)}
+                          className="text-[13px] font-bold font-mono text-accent hover:underline focus:outline-none text-left cursor-pointer"
+                        >
+                          {ticket.ticketNumber}
+                        </button>
+                        <div className={`text-[9px] font-bold uppercase tracking-widest px-2 py-1 rounded-md border ${sla?.isBreached ? 'bg-red-500/10 text-red-500 border-red-500/20' : 'bg-amber-500/10 text-amber-500 border-amber-500/20'}`}>
+                          {sla?.isBreached ? 'BREACHED' : 'NEARING BREACH'}
+                        </div>
+                      </div>
+                      <div className="text-[13px] font-medium text-ink truncate mb-3">{ticket.subject}</div>
+                      <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest">
+                        <span className="text-ink-muted">{ticket.priority}</span>
+                        <span className={sla?.isBreached ? 'text-red-500' : 'text-amber-500'}>
+                          {sla?.isBreached ? 'Overdue' : `${sla?.hoursLeft}h ${sla?.minutesLeft}m left`}
+                        </span>
                       </div>
                     </div>
-                    <div className="text-[13px] font-medium text-ink truncate mb-3">{ticket.subject}</div>
-                    <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest">
-                      <span className="text-ink-muted">{ticket.priority}</span>
-                      <span className={sla?.isBreached ? 'text-red-500' : 'text-amber-500'}>
-                        {sla?.isBreached ? 'Overdue' : `${sla?.hoursLeft}h ${sla?.minutesLeft}m left`}
-                      </span>
-                    </div>
-                  </div>
-                ))
-              )}
+                  ))
+                )}
+              </div>
             </div>
-          </div>
+          )}
         
           {/* Asset Health Summary */}
           <div className="bg-surface rounded-2xl shadow-sm border border-border overflow-hidden flex flex-col">
