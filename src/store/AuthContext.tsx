@@ -102,6 +102,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                setProfile(null);
                setLoading(false);
                return;
+             } else {
+               // Attempt to auto-link department if their email matches an official office email
+               const { data: deptMatch } = await supabase
+                 .from('departments')
+                 .select('id')
+                 .eq('email', currentUser.email)
+                 .single();
+                 
+               if (deptMatch) {
+                 assignedDept = deptMatch.id;
+               }
              }
            }
 
